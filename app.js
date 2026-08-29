@@ -1,819 +1,707 @@
-// ==================== تنظیمات اولیه ====================
-const tg = window.Telegram.WebApp;
-const API_URL = 'http://localhost:5000/api';
-
-// حالت برنامه
-const state = {
-    userId: null,
-    userProfile: null,
-    currentUserIndex: 0,
-    allUsers: [],
-    isVip: false,
-    selectedInterests: [],
-    mediaRecorder: null,
-    audioBlob: null,
-    currentGameState: null,
-    todTimeLeft: 600,
-    quizCurrentQuestion: 0,
-    quizUserScore: 0,
-    quizPartnerScore: 0,
-    tttBoard: Array(9).fill(null),
-    tttPlayerSymbol: 'X',
-    tttAISymbol: 'O',
-    tttIsPlayerTurn: true,
-    rpsScore: { player: 0, bot: 0 },
-};
-
-// ==================== Event Listeners ====================
-
 document.addEventListener('DOMContentLoaded', () => {
-    tg.expand();
-    initializeApp();
-    setupEventListeners();
-    loadStoredProfile();
-});
+    // ----------------------------------------------------
+    // 1. مقداردهی اولیه Telegram WebApp SDK
+    // ----------------------------------------------------
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        // تنظیم رنگ نوار بالای تلگرام متناسب با تم برنامه
+        if (tg.setHeaderColor) tg.setHeaderColor('#0f0c20');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#0f0c20');
+    }
 
-function setupEventListeners() {
-    // کنترل‌های ورود
-    document.getElementById('btn-telegram-login').addEventListener('click', handleTelegramLogin);
-    document.getElementById('btn-open-register').addEventListener('click', () => {
-        document.getElementById('register-modal').classList.remove('hidden');
-    });
-    document.getElementById('btn-close-register').addEventListener('click', () => {
-        document.getElementById('register-modal').classList.add('hidden');
-    });
+    let currentUser = null;
+    let currentFeedIndex = 0;
+    let selectedTags = [];
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let activeAudio = null;
 
-    // کنترل‌های پروفایل
-    document.getElementById('btn-save-profile').addEventListener('click', handleSaveProfile);
-    document.getElementById('record-btn').addEventListener('click', handleVoiceRecord);
+    // داده‌های نمونه برای کارت‌های اکسپلور
+    const mockUsers = [
+        {
+            id: 1,
+            name: "سارا",
+            age: 23,
+            city: "تهران",
+            isVip: true,
+            img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600",
+            interests: ["☕ کافه‌گردی", "🎧 موسیقی", "🎬 فیلم و سریال"],
+            voiceUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        },
+        {
+            id: 2,
+            name: "آرش",
+            age: 26,
+            city: "شیراز",
+            isVip: false,
+            img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
+            interests: ["🎮 گیمینگ", "⚽ ورزش", "💻 تکنولوژی"],
+            voiceUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+        },
+        {
+            id: 3,
+            name: "مریم",
+            age: 21,
+            city: "اصفهان",
+            isVip: true,
+            img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600",
+            interests: ["✈️ سفر", "🎨 هنر و طراحی", "🍕 آشپزی"],
+            voiceUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+        }
+    ];
 
-    // انتخاب علاقه‌مندی‌ها
-    document.querySelectorAll('.tag-chip').forEach(chip => {
-        chip.addEventListener('click', (e) => handleInterestSelection(e.target));
-    });
+    // ----------------------------------------------------
+    // 2. مدیریت اعلانات (Toast) و لودینگ (Loader)
+    // ----------------------------------------------------
+    function showToast(message, icon = '🌶️') {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
 
-    // کنترل‌های Feed
-    document.getElementById('btn-like').addEventListener('click', () => cardAction('like'));
-    document.getElementById('btn-super').addEventListener('click', () => cardAction('super'));
-    document.getElementById('btn-game').addEventListener('click', () => cardAction('game'));
-    document.getElementById('btn-pass').addEventListener('click', () => cardAction('pass'));
-    document.getElementById('btn-play-voice').addEventListener('click', () => playVoiceMessage());
+        if (!toast || !toastMsg || !toastIcon) return;
 
-    // کنترل‌های Night Chat
-    document.getElementById('filter-girl').addEventListener('click', () => setGenderFilter('girl'));
-    document.getElementById('filter-boy').addEventListener('click', () => setGenderFilter('boy'));
-    document.getElementById('btn-night-chat').addEventListener('click', handleNightChat);
+        toastMsg.textContent = message;
+        toastIcon.textContent = icon;
 
-    // کنترل‌های بازی‌ها
-    document.getElementById('game-truth-or-dare').addEventListener('click', openTruthOrDare);
-    document.getElementById('game-personality').addEventListener('click', openPersonalityTest);
-    document.getElementById('game-tictactoe').addEventListener('click', openTicTacToe);
-    document.getElementById('game-rps').addEventListener('click', openRpsGame);
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
 
-    // کنترل‌های VIP
-    document.getElementById('btn-upgrade-vip').addEventListener('click', handleBuyVip);
-    document.getElementById('btn-buy-vip').addEventListener('click', handleBuyVip);
-    document.getElementById('btn-logout').addEventListener('click', handleLogout);
+    function toggleLoader(show) {
+        const loader = document.getElementById('page-loader');
+        if (!loader) return;
+        if (show) {
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+        } else {
+            loader.classList.add('hidden');
+            loader.classList.remove('flex');
+        }
+    }
 
-    // Tab Navigation
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    // ----------------------------------------------------
+    // 3. مدیریت تب‌ها و ناوبری (Navigation)
+    // ----------------------------------------------------
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function switchTab(targetTab) {
+        tabContents.forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.id === `tab-${targetTab}`) {
+                tab.classList.add('active');
+            }
+        });
+
+        navButtons.forEach(btn => {
+            if (btn.dataset.tab === targetTab) {
+                btn.classList.add('active', 'text-red-500');
+                btn.classList.remove('text-gray-400');
+            } else {
+                btn.classList.remove('active', 'text-red-500');
+                btn.classList.add('text-gray-400');
+            }
+        });
+    }
+
+    navButtons.forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // مودال‌های بازی‌ها
-    document.getElementById('btn-close-tod').addEventListener('click', () => closeModal('tod-modal'));
-    document.getElementById('btn-send-tod').addEventListener('click', sendTodQuestion);
-    document.getElementById('btn-accept-tod').addEventListener('click', acceptTodMatch);
+    // ----------------------------------------------------
+    // 4. احراز هویت و پروفایل کاربری
+    // ----------------------------------------------------
+    const loginScreen = document.getElementById('login-screen');
+    const registerModal = document.getElementById('register-modal');
 
-    document.getElementById('btn-close-personality').addEventListener('click', () => closeModal('personality-modal'));
+    // چک کردن پروفایل ذخیره‌شده
+    const savedProfile = localStorage.getItem('spicy_user_profile');
+    if (savedProfile) {
+        try {
+            currentUser = JSON.parse(savedProfile);
+            if (loginScreen) loginScreen.classList.add('hidden');
+            updateProfileUI();
+            renderFeedCard();
+        } catch (e) {
+            localStorage.removeItem('spicy_user_profile');
+        }
+    }
 
-    document.getElementById('btn-close-tictactoe').addEventListener('click', () => closeModal('tictactoe-modal'));
-    document.getElementById('btn-reset-ttt').addEventListener('click', resetTicTacToe);
+    // ورود با اکانت تلگرام
+    const btnTgLogin = document.getElementById('btn-telegram-login');
+    if (btnTgLogin) {
+        btnTgLogin.addEventListener('click', () => {
+            toggleLoader(true);
+            setTimeout(() => {
+                toggleLoader(false);
+                const tgUser = tg?.initDataUnsafe?.user;
 
-    document.getElementById('btn-close-rps').addEventListener('click', () => closeModal('rps-modal'));
-    document.querySelectorAll('.rps-btn').forEach(btn => {
-        btn.addEventListener('click', () => playRps(btn.dataset.choice));
+                if (tgUser) {
+                    currentUser = {
+                        name: tgUser.first_name || 'کاربر تلگرام',
+                        age: 24,
+                        city: 'تهران',
+                        interests: ['☕ کافه‌گردی', '🎧 موسیقی', '🎮 گیمینگ'],
+                        isVip: false
+                    };
+                } else {
+                    currentUser = {
+                        name: 'کاربر مهمان',
+                        age: 22,
+                        city: 'تهران',
+                        interests: ['✈️ سفر', '🎧 موسیقی', '🍕 آشپزی'],
+                        isVip: false
+                    };
+                }
+                saveAndInitUser();
+                showToast(`خوش آمدی ${currentUser.name}! ⚡`);
+            }, 600);
+        });
+    }
+
+    // باز/بسته‌کردن مودال ثبت نام
+    document.getElementById('btn-open-register')?.addEventListener('click', () => {
+        registerModal?.classList.remove('hidden');
     });
-}
 
-// ==================== توابع اساسی ====================
+    document.getElementById('btn-close-register')?.addEventListener('click', () => {
+        registerModal?.classList.add('hidden');
+    });
 
-function initializeApp() {
-    console.log('🚀 Initializing Spicy Date App');
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-        state.userId = user.id;
-        console.log(`User logged in: ${user.first_name}`);
-    }
-}
-
-function showToast(message, icon = '🌶️', duration = 2500) {
-    const toast = document.getElementById('toast');
-    document.getElementById('toast-message').innerText = message;
-    document.getElementById('toast-icon').innerText = icon;
-    toast.classList.add('show');
-    
-    if (tg.HapticFeedback) {
-        tg.HapticFeedback.notificationOccurred('success');
-    }
-    
-    setTimeout(() => toast.classList.remove('show'), duration);
-}
-
-function showError(message) {
-    showToast(message, '❌', 3000);
-}
-
-function showLoader(show = true) {
-    const loader = document.getElementById('page-loader');
-    loader.style.display = show ? 'flex' : 'none';
-}
-
-function switchTab(tabId) {
-    showLoader(true);
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-    setTimeout(() => {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.add('active');
-
-        // Update nav buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.tab === tabId) {
-                btn.classList.add('active');
+    // انتخاب تگ‌های علاقه‌مندی
+    const tagChips = document.querySelectorAll('.tag-chip');
+    tagChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const tagText = chip.textContent.trim();
+            if (chip.classList.contains('selected')) {
+                chip.classList.remove('selected');
+                selectedTags = selectedTags.filter(t => t !== tagText);
+            } else {
+                if (selectedTags.length >= 3) {
+                    showToast('شما حداکثر ۳ علاقه‌مندی می‌توانید انتخاب کنید!', '⚠️');
+                    return;
+                }
+                chip.classList.add('selected');
+                selectedTags.push(tagText);
             }
         });
+    });
 
-        // اگر Feed است، کاربران را بارگذاری کنید
-        if (tabId === 'feed') {
-            loadUsers();
-        }
+    // ضبط ویس (Spicy Voice) با مدیریت ایمن خطای مرورگر
+    const recordBtn = document.getElementById('record-btn');
+    const voiceStatus = document.getElementById('voice-status');
 
-        showLoader(false);
-    }, 250);
-}
+    if (recordBtn) {
+        recordBtn.addEventListener('click', async () => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showToast('مرورگر شما از ضبط صدا پشتیبانی نمی‌کند!', '❌');
+                return;
+            }
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
 
-// ==================== مدیریت پروفایل ====================
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                    mediaRecorder.onstop = () => {
+                        if (voiceStatus) {
+                            voiceStatus.textContent = "ضبط شد (آماده ارسال)";
+                            voiceStatus.classList.add('text-green-400');
+                        }
+                        document.getElementById('rec-icon').textContent = '🔴';
+                        document.getElementById('rec-text').textContent = 'ضبط مجدد';
+                    };
 
-function loadStoredProfile() {
-    const stored = localStorage.getItem('spicyProfile');
-    if (stored) {
-        state.userProfile = JSON.parse(stored);
-        document.getElementById('prof-name').innerText = state.userProfile.name;
-        document.getElementById('prof-info').innerText = `📍 ${state.userProfile.city}`;
+                    mediaRecorder.start();
+                    document.getElementById('rec-icon').textContent = '⏹️';
+                    document.getElementById('rec-text').textContent = 'پایان ضبط';
+                    if (voiceStatus) voiceStatus.textContent = "در حال ضبط...";
+
+                    setTimeout(() => {
+                        if (mediaRecorder && mediaRecorder.state === 'recording') {
+                            mediaRecorder.stop();
+                        }
+                    }, 15000);
+                } catch (err) {
+                    showToast('دسترسی به میکروفون مسدود است!', '❌');
+                }
+            } else if (mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        });
     }
-}
 
-function handleTelegramLogin() {
-    const user = tg.initDataUnsafe?.user;
-    if (!user) {
-        showError('خطای ورود تلگرام');
-        return;
-    }
+    // ذخیره‌سازی پروفایل
+    document.getElementById('btn-save-profile')?.addEventListener('click', () => {
+        const name = document.getElementById('reg-name')?.value.trim();
+        const age = document.getElementById('reg-age')?.value.trim();
+        const city = document.getElementById('reg-city')?.value.trim();
 
-    state.userId = user.id;
-    showToast(`خوش آمدید ${user.first_name}! 🔥`);
-    document.getElementById('login-screen').classList.add('hidden');
-    
-    // بارگذاری پروفایل موجود
-    if (!state.userProfile) {
-        document.getElementById('register-modal').classList.remove('hidden');
-    }
-}
-
-function handleInterestSelection(button) {
-    const isSelected = button.classList.contains('selected');
-    
-    if (isSelected) {
-        button.classList.remove('selected');
-        state.selectedInterests = state.selectedInterests.filter(
-            interest => interest !== button.innerText
-        );
-    } else {
-        if (state.selectedInterests.length >= 3) {
-            showError('حداکثر ۳ علاقه‌مندی می‌توانید انتخاب کنید');
+        if (!name || !age || !city) {
+            showToast('لطفا تمامی فیلدها را پر کنید.', '⚠️');
             return;
         }
-        button.classList.add('selected');
-        state.selectedInterests.push(button.innerText);
-    }
 
-    document.getElementById('interest-error').innerText = '';
-}
+        if (selectedTags.length < 3) {
+            const errElem = document.getElementById('interest-error');
+            if (errElem) errElem.textContent = 'لطفاً ۳ علاقه‌مندی انتخاب کنید.';
+            return;
+        }
 
-async function handleVoiceRecord() {
-    const btn = document.getElementById('record-btn');
-    const icon = document.getElementById('rec-icon');
-    const text = document.getElementById('rec-text');
-
-    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-        // توقف ضبط
-        state.mediaRecorder.stop();
-        icon.innerText = '🔴';
-        text.innerText = 'شروع ضبط';
-        document.getElementById('voice-status').innerText = 'ضبط شده ✅';
-        return;
-    }
-
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        state.mediaRecorder = new MediaRecorder(stream);
-        
-        state.mediaRecorder.ondataavailable = (e) => {
-            state.audioBlob = e.data;
-        };
-
-        state.mediaRecorder.start();
-        icon.innerText = '🔴';
-        text.innerText = 'توقف ضبط';
-        document.getElementById('voice-status').innerText = 'در حال ضبط...';
-
-        // متوقف کردن خودکار بعد از ۱۵ ثانیه
-        setTimeout(() => {
-            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-                state.mediaRecorder.stop();
-                icon.innerText = '🔴';
-                text.innerText = 'شروع ضبط';
-                document.getElementById('voice-status').innerText = 'ضبط شده ✅';
-            }
-        }, 15000);
-
-    } catch (err) {
-        showError('دسترسی به میکروفون مورد نیاز است');
-        console.error('Microphone error:', err);
-    }
-}
-
-async function handleSaveProfile() {
-    // تایید ورودی‌ها
-    const name = document.getElementById('reg-name').value.trim();
-    const age = parseInt(document.getElementById('reg-age').value);
-    const city = document.getElementById('reg-city').value.trim();
-
-    let hasError = false;
-
-    if (!name || name.length < 2) {
-        document.getElementById('name-error').innerText = 'نام باید حداقل ۲ کاراکتر باشد';
-        hasError = true;
-    }
-
-    if (!age || age < 18 || age > 100) {
-        document.getElementById('age-error').innerText = 'سن باید بین ۱۸ تا ۱۰۰ باشد';
-        hasError = true;
-    }
-
-    if (!city || city.length < 2) {
-        document.getElementById('city-error').innerText = 'شهر الزامی است';
-        hasError = true;
-    }
-
-    if (state.selectedInterests.length !== 3) {
-        document.getElementById('interest-error').innerText = 'باید دقیقاً ۳ علاقه‌مندی انتخاب کنید';
-        hasError = true;
-    }
-
-    if (hasError) return;
-
-    showLoader(true);
-
-    try {
-        const profileData = {
-            userId: state.userId,
+        currentUser = {
             name,
             age,
             city,
-            interests: state.selectedInterests,
-            hasVoice: !!state.audioBlob
+            interests: selectedTags,
+            isVip: currentUser ? currentUser.isVip : false
         };
 
-        // ذخیره در LocalStorage
-        localStorage.setItem('spicyProfile', JSON.stringify(profileData));
-        state.userProfile = profileData;
+        saveAndInitUser();
+        registerModal?.classList.add('hidden');
+        showToast('پروفایل ذخیره شد! 🔥');
+    });
 
-        // اگر صدا دارد، به backend ارسال کنید
-        if (state.audioBlob) {
-            const formData = new FormData();
-            formData.append('userId', state.userId);
-            formData.append('audio', state.audioBlob, 'voice.wav');
+    function saveAndInitUser() {
+        localStorage.setItem('spicy_user_profile', JSON.stringify(currentUser));
+        if (loginScreen) loginScreen.classList.add('hidden');
+        updateProfileUI();
+        renderFeedCard();
+    }
 
-            await fetch(`${API_URL}/profile/upload-voice`, {
-                method: 'POST',
-                body: formData
+    function updateProfileUI() {
+        if (!currentUser) return;
+        const profName = document.getElementById('prof-name');
+        const profInfo = document.getElementById('prof-info');
+        const vipStatus = document.getElementById('vip-status');
+
+        if (profName) profName.textContent = `${currentUser.name}، ${currentUser.age}`;
+        if (profInfo) profInfo.textContent = `📍 ${currentUser.city}`;
+        if (vipStatus && currentUser.isVip) vipStatus.textContent = 'VIP فعال';
+    }
+
+    document.getElementById('btn-logout')?.addEventListener('click', () => {
+        localStorage.removeItem('spicy_user_profile');
+        location.reload();
+    });
+
+    // ----------------------------------------------------
+    // 5. کارت‌های اکسپلور (Feed & Match)
+    // ----------------------------------------------------
+    function renderFeedCard() {
+        const userCard = document.getElementById('user-card');
+        if (!userCard) return;
+
+        if (currentFeedIndex >= mockUsers.length) {
+            userCard.innerHTML = `
+                <div class="text-center my-auto p-4 space-y-2">
+                    <span class="text-4xl">🏜️</span>
+                    <h3 class="text-sm font-bold text-gray-300">کاربر دیگری یافت نشد!</h3>
+                    <p class="text-[10px] text-gray-500">بعداً دوباره سر بزنید.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const user = mockUsers[currentFeedIndex];
+        document.getElementById('card-img').src = user.img;
+        document.getElementById('card-name').textContent = `${user.name}، ${user.age}`;
+        document.getElementById('card-location').textContent = `📍 ${user.city}`;
+
+        const vipBadge = document.getElementById('vip-badge');
+        if (vipBadge) {
+            if (user.isVip) vipBadge.classList.remove('hidden');
+            else vipBadge.classList.add('hidden');
+        }
+
+        const interestsContainer = document.getElementById('card-interests');
+        if (interestsContainer) {
+            interestsContainer.innerHTML = '';
+            user.interests.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = 'text-[9px] bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 text-gray-200';
+                span.textContent = tag;
+                interestsContainer.appendChild(span);
             });
         }
 
-        showToast('پروفایل با موفقیت ذخیره شد! ✨');
-        document.getElementById('register-modal').classList.add('hidden');
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('prof-name').innerText = name;
-        document.getElementById('prof-info').innerText = `📍 ${city}`;
-
-    } catch (err) {
-        showError('خطا در ذخیره پروفایل');
-        console.error('Save profile error:', err);
-    } finally {
-        showLoader(false);
-    }
-}
-
-// ==================== منطق Feed ====================
-
-async function loadUsers() {
-    try {
-        showLoader(true);
-        const response = await fetch(`${API_URL}/users/discover`);
-        
-        if (!response.ok) throw new Error('Failed to load users');
-        
-        const data = await response.json();
-        state.allUsers = data.users || [];
-        state.currentUserIndex = 0;
-
-        if (state.allUsers.length > 0) {
-            displayCurrentUser();
-        } else {
-            document.getElementById('feed-error').innerText = 'کاربری برای نمایش وجود ندارد';
+        const playBtn = document.getElementById('btn-play-voice');
+        if (playBtn) {
+            playBtn.onclick = () => {
+                if (activeAudio) {
+                    activeAudio.pause();
+                    if (activeAudio.src === user.voiceUrl) {
+                        activeAudio = null;
+                        playBtn.textContent = '▶';
+                        return;
+                    }
+                }
+                activeAudio = new Audio(user.voiceUrl);
+                activeAudio.play().catch(() => showToast('خطا در پخش فایل صوتی', '⚠️'));
+                playBtn.textContent = '⏸';
+                activeAudio.onended = () => {
+                    playBtn.textContent = '▶';
+                    activeAudio = null;
+                };
+            };
         }
-    } catch (err) {
-        console.error('Load users error:', err);
-        displayDemoUser();
-    } finally {
-        showLoader(false);
-    }
-}
-
-function displayCurrentUser() {
-    const user = state.allUsers[state.currentUserIndex];
-    if (!user) return;
-
-    const interests = user.interests?.map(i => `<span class="text-[9px] bg-white/10 px-2 py-0.5 rounded-md">${i}</span>`).join('') || '';
-
-    document.getElementById('card-name').innerText = `${user.name}, ${user.age}`;
-    document.getElementById('card-location').innerText = `📍 ${user.city}`;
-    document.getElementById('card-img').src = user.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600';
-    document.getElementById('card-interests').innerHTML = interests;
-
-    if (user.isVip) {
-        document.getElementById('vip-badge').classList.remove('hidden');
-    } else {
-        document.getElementById('vip-badge').classList.add('hidden');
     }
 
-    // Reset card position
-    document.getElementById('user-card').style.transform = 'none';
-}
+    document.getElementById('btn-pass')?.addEventListener('click', () => nextCard());
 
-function displayDemoUser() {
-    document.getElementById('card-name').innerText = 'مینا، ۲۴';
-    document.getElementById('card-location').innerText = '📍 تهران • ۲.۵ km';
-    document.getElementById('card-img').src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600';
-    document.getElementById('card-interests').innerHTML = `
-        <span class="text-[9px] bg-white/10 px-2 py-0.5 rounded-md">🎮 گیمینگ</span>
-        <span class="text-[9px] bg-white/10 px-2 py-0.5 rounded-md">☕ کافه‌گردی</span>
-    `;
-}
-
-async function cardAction(type) {
-    const card = document.getElementById('user-card');
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-    let message = '';
-    let emoji = '';
-
-    if (type === 'like') {
-        card.style.transform = 'translateX(-150%) rotate(-20deg)';
-        message = 'درخواست اسپایسی فرستاده شد! 🌶️';
-        emoji = '🌶️';
-    } else if (type === 'super') {
-        card.style.transform = 'translateY(-150%) scale(1.1)';
-        message = 'سوپر اسپایسی فرستاده شد! ⭐';
-        emoji = '⭐';
-    } else if (type === 'game') {
-        message = 'دعوت به مینی‌گیم ارسال شد! 🎮';
-        emoji = '🎮';
-    } else {
-        card.style.transform = 'translateX(150%) rotate(20deg)';
-        message = 'کاربر رد شد ❌';
-        emoji = '❌';
-    }
-
-    try {
-        const targetUserId = state.allUsers[state.currentUserIndex]?.id;
-        if (targetUserId) {
-            await fetch(`${API_URL}/interactions/action`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: state.userId,
-                    targetUserId,
-                    action: type
-                })
-            });
+    document.getElementById('btn-like')?.addEventListener('click', () => {
+        const user = mockUsers[currentFeedIndex];
+        if (user) {
+            showToast(`شما به ${user.name} اسپایسی دادید! 🌶️`);
+            addChat(user);
         }
-    } catch (err) {
-        console.error('Action error:', err);
-    }
+        nextCard();
+    });
 
-    showToast(message, emoji);
-
-    setTimeout(() => {
-        state.currentUserIndex++;
-        if (state.currentUserIndex < state.allUsers.length) {
-            displayCurrentUser();
-        } else {
-            document.getElementById('feed-error').innerText = 'نیازی برای بارگذاری بیشتر کاربران';
-            loadUsers();
+    document.getElementById('btn-super')?.addEventListener('click', () => {
+        const user = mockUsers[currentFeedIndex];
+        if (user) {
+            showToast(`سوپر اسپایسی برای ${user.name} ارسال شد! ⭐`);
+            addChat(user);
         }
-    }, 400);
-}
+        nextCard();
+    });
 
-function playVoiceMessage() {
-    showToast('پخش Spicy Voice... 🎙️', '🎙️');
-    // در عمل، از URLای صوتی استفاده می‌شود
-}
+    document.getElementById('btn-game')?.addEventListener('click', () => switchTab('games'));
 
-// ==================== منطق Night Chat ====================
-
-function setGenderFilter(gender) {
-    const girlBtn = document.getElementById('filter-girl');
-    const boyBtn = document.getElementById('filter-boy');
-
-    if (gender === 'girl') {
-        girlBtn.classList.add('active');
-        girlBtn.style.background = 'rgba(239, 68, 68, 0.3)';
-        girlBtn.style.borderColor = '#ef4444';
-        boyBtn.classList.remove('active');
-        boyBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-        boyBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-    } else {
-        boyBtn.classList.add('active');
-        boyBtn.style.background = 'rgba(239, 68, 68, 0.3)';
-        boyBtn.style.borderColor = '#ef4444';
-        girlBtn.classList.remove('active');
-        girlBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-        girlBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-    }
-}
-
-async function handleNightChat() {
-    if (!state.isVip) {
-        showError('بخش چت شبانه فقط مخصوص کاربران VIP است!');
-        switchTab('profile');
-        return;
+    function nextCard() {
+        if (activeAudio) {
+            activeAudio.pause();
+            activeAudio = null;
+        }
+        currentFeedIndex++;
+        const card = document.getElementById('user-card');
+        if (card) {
+            card.classList.remove('fade-in');
+            void card.offsetWidth;
+            card.classList.add('fade-in');
+        }
+        renderFeedCard();
     }
 
-    showToast('در حال جستجوی پارتنر... 🌙', '🌙');
+    // ----------------------------------------------------
+    // 6. سیستم گفت‌وگوها (Chats)
+    // ----------------------------------------------------
+    const activeChats = [];
 
-    try {
-        const response = await fetch(`${API_URL}/night-chat/match`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: state.userId,
-                preferredGender: document.getElementById('filter-girl').classList.contains('active') ? 'girl' : 'boy'
-            })
+    function addChat(user) {
+        if (activeChats.find(c => c.id === user.id)) return;
+        activeChats.push(user);
+        renderChatsList();
+    }
+
+    function renderChatsList() {
+        const chatsList = document.getElementById('chats-list');
+        if (!chatsList) return;
+
+        if (activeChats.length === 0) {
+            chatsList.innerHTML = '<p class="text-gray-400 text-xs text-center mt-8">هنوز چتی باز نشده است</p>';
+            return;
+        }
+
+        chatsList.innerHTML = '';
+        activeChats.forEach(chat => {
+            const item = document.createElement('div');
+            item.className = 'spicy-card p-3 rounded-2xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition';
+            item.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <img src="${chat.img}" class="w-10 h-10 rounded-full object-cover border border-red-500/30">
+                    <div>
+                        <h3 class="font-bold text-xs text-white">${chat.name}</h3>
+                        <p class="text-[10px] text-green-400">یک مسابقه جدید!</p>
+                    </div>
+                </div>
+                <span class="text-xs bg-red-500/20 text-red-400 px-2.5 py-1 rounded-xl border border-red-500/30">چت 💬</span>
+            `;
+            item.onclick = () => showToast(`گفتگو با ${chat.name}`);
+            chatsList.appendChild(item);
         });
+    }
 
-        if (response.ok) {
-            showToast('پارتنر یافت شد! 💬', '💬', 2000);
-            switchTab('chats');
+    // ----------------------------------------------------
+    // 7. چت شبانه (Night Mask Chat)
+    // ----------------------------------------------------
+    document.getElementById('btn-night-chat')?.addEventListener('click', () => {
+        if (!currentUser?.isVip) {
+            showToast('این بخش مخصوص کاربران VIP است!', '⭐');
+            return;
         }
-    } catch (err) {
-        showError('خطا در جستجوی پارتنر');
-        console.error('Night chat error:', err);
-    }
-}
-
-// ==================== منطق بازی: جرأت یا حقیقت ====================
-
-let todTimerInterval;
-let todMessages = [];
-
-async function openTruthOrDare() {
-    if (!state.isVip) {
-        showError('بازی جرأت یا حقیقت مخصوص کاربران VIP است!');
-        switchTab('profile');
-        return;
-    }
-
-    document.getElementById('tod-modal').classList.remove('hidden');
-    startTodTimer();
-    state.currentGameState = 'truth-or-dare';
-    todMessages = [];
-    document.getElementById('tod-chat-box').innerHTML = `
-        <div class="bg-red-500/20 border border-red-500/30 p-2 rounded-xl text-[11px] text-gray-200">
-            سیستم: ۱۰ دقیقه زمان دارید! 🔥
-        </div>
-    `;
-}
-
-function startTodTimer() {
-    state.todTimeLeft = 600;
-    clearInterval(todTimerInterval);
-    
-    todTimerInterval = setInterval(() => {
-        const minutes = Math.floor(state.todTimeLeft / 60);
-        const seconds = state.todTimeLeft % 60;
-        document.getElementById('tod-timer').innerText = 
-            `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        
-        if (--state.todTimeLeft < 0) {
-            clearInterval(todTimerInterval);
-            autoCloseTodGame();
-        }
-    }, 1000);
-}
-
-function sendTodQuestion() {
-    const input = document.getElementById('tod-input');
-    const message = input.value.trim();
-    
-    if (!message) return;
-
-    const box = document.getElementById('tod-chat-box');
-    const messageEl = document.createElement('div');
-    messageEl.className = 'bg-red-500/30 border border-red-500/40 p-2 rounded-xl text-right text-xs text-gray-200';
-    messageEl.innerText = message;
-    
-    box.appendChild(messageEl);
-    todMessages.push(message);
-    input.value = '';
-    box.scrollTop = box.scrollHeight;
-}
-
-function acceptTodMatch() {
-    clearInterval(todTimerInterval);
-    closeModal('tod-modal');
-    showToast('کاربر به چت‌های دائمی اضافه شد! 💬');
-    switchTab('chats');
-}
-
-function autoCloseTodGame() {
-    closeModal('tod-modal');
-    showToast('زمان بازی پایان یافت!', '⏰');
-}
-
-// ==================== منطق بازی: شخصیت‌شناسی ====================
-
-const quizQuestions = [
-    {
-        question: 'در آخر هفته ترجیح می‌دهید:',
-        options: [
-            { text: '☕ رفتن به کافه و شلوغی', score: 85 },
-            { text: '🎬 تماشای فیلم در خانه', score: 92 }
-        ]
-    },
-    {
-        question: 'برای تاریخ ایده‌آل شما چیست:',
-        options: [
-            { text: '🍽️ شام در رستوران لوکس', score: 78 },
-            { text: '🎮 بازی‌کردن بازی‌های ویدیویی', score: 88 }
-        ]
-    },
-    {
-        question: 'هنگام استرس بیشتر دوست دارید:',
-        options: [
-            { text: '🏃 ورزش و حرکت', score: 80 },
-            { text: '🎵 گوش دادن به موسیقی', score: 90 }
-        ]
-    }
-];
-
-function openPersonalityTest() {
-    document.getElementById('personality-modal').classList.remove('hidden');
-    state.quizCurrentQuestion = 0;
-    state.quizUserScore = 0;
-    state.quizPartnerScore = 0;
-    displayQuizQuestion();
-}
-
-function displayQuizQuestion() {
-    if (state.quizCurrentQuestion >= quizQuestions.length) {
-        showQuizResult();
-        return;
-    }
-
-    const question = quizQuestions[state.quizCurrentQuestion];
-    document.getElementById('quiz-question').innerText = question.question;
-    
-    const optionsContainer = document.getElementById('quiz-options');
-    optionsContainer.innerHTML = '';
-
-    question.options.forEach(option => {
-        const btn = document.createElement('button');
-        btn.className = 'w-full py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-right px-3 hover:bg-white/10 transition';
-        btn.innerText = option.text;
-        btn.addEventListener('click', () => answerQuiz(option.score));
-        optionsContainer.appendChild(btn);
-    });
-}
-
-function answerQuiz(score) {
-    state.quizUserScore += score;
-    state.quizCurrentQuestion++;
-    displayQuizQuestion();
-}
-
-function showQuizResult() {
-    document.getElementById('quiz-container').classList.add('hidden');
-    document.getElementById('quiz-result').classList.remove('hidden');
-    const matchPercent = Math.floor((state.quizUserScore / (quizQuestions.length * 100)) * 100);
-    document.getElementById('match-percent').innerText = matchPercent + '%';
-}
-
-// ==================== منطق بازی: دوز نئونی ====================
-
-function openTicTacToe() {
-    document.getElementById('tictactoe-modal').classList.remove('hidden');
-    resetTicTacToe();
-    renderTttBoard();
-}
-
-function renderTttBoard() {
-    const board = document.getElementById('ttt-board');
-    board.innerHTML = '';
-
-    state.tttBoard.forEach((cell, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'tictactoe-cell spicy-card rounded-xl';
-        btn.innerText = cell || '';
-        
-        if (cell === 'X') btn.style.color = '#ff3b5c';
-        if (cell === 'O') btn.style.color = '#3b82f6';
-
-        btn.addEventListener('click', () => makeTttMove(index));
-        board.appendChild(btn);
-    });
-
-    updateTttStatus();
-}
-
-function makeTttMove(index) {
-    if (state.tttBoard[index] || !state.tttIsPlayerTurn) return;
-
-    state.tttBoard[index] = state.tttPlayerSymbol;
-    state.tttIsPlayerTurn = false;
-
-    if (!checkTttWin() && !isTttBoardFull()) {
-        makeAIMove();
-    }
-
-    renderTttBoard();
-}
-
-function makeAIMove() {
-    const availableMoves = state.tttBoard
-        .map((cell, i) => cell === null ? i : null)
-        .filter(i => i !== null);
-
-    if (availableMoves.length === 0) {
-        state.tttIsPlayerTurn = false;
-        return;
-    }
-
-    const move = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-    state.tttBoard[move] = state.tttAISymbol;
-    state.tttIsPlayerTurn = true;
-
-    if (!checkTttWin()) {
-        renderTttBoard();
-    }
-}
-
-function checkTttWin() {
-    const lines = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8],
-        [0, 3, 6], [1, 4, 7], [2, 5, 8],
-        [0, 4, 8], [2, 4, 6]
-    ];
-
-    for (let line of lines) {
-        const [a, b, c] = line;
-        if (state.tttBoard[a] && 
-            state.tttBoard[a] === state.tttBoard[b] && 
-            state.tttBoard[a] === state.tttBoard[c]) {
-            return state.tttBoard[a];
-        }
-    }
-    return null;
-}
-
-function isTttBoardFull() {
-    return state.tttBoard.every(cell => cell !== null);
-}
-
-function updateTttStatus() {
-    const winner = checkTttWin();
-    let statusText = '';
-
-    if (winner === 'X') {
-        statusText = 'شما برنده شدید! 🎉';
-    } else if (winner === 'O') {
-        statusText = 'بات برنده شد! 🤖';
-    } else if (isTttBoardFull()) {
-        statusText = 'مساوی شد! 🤝';
-    } else {
-        statusText = state.tttIsPlayerTurn ? 'نوبت شما' : 'نوبت بات...';
-    }
-
-    document.getElementById('ttt-status').innerText = statusText;
-}
-
-function resetTicTacToe() {
-    state.tttBoard = Array(9).fill(null);
-    state.tttIsPlayerTurn = true;
-    renderTttBoard();
-}
-
-// ==================== منطق بازی: سنگ کاغذ قیچی ====================
-
-function openRpsGame() {
-    document.getElementById('rps-modal').classList.remove('hidden');
-    state.rpsScore = { player: 0, bot: 0 };
-    updateRpsScore();
-}
-
-function playRps(playerChoice) {
-    const choices = ['👊', '✋', '✂️'];
-    const botChoice = choices[Math.floor(Math.random() * 3)];
-
-    let result = '';
-    if (playerChoice === botChoice) {
-        result = 'مساوی شد!';
-    } else if (
-        (playerChoice === '👊' && botChoice === '✂️') ||
-        (playerChoice === '✋' && botChoice === '👊') ||
-        (playerChoice === '✂️' && botChoice === '✋')
-    ) {
-        result = 'شما برنده شدید! 🎉';
-        state.rpsScore.player++;
-    } else {
-        result = 'بات برنده شد! 🤖';
-        state.rpsScore.bot++;
-    }
-
-    document.getElementById('rps-result').innerText = `شما: ${playerChoice} | بات: ${botChoice} -> ${result}`;
-    updateRpsScore();
-
-    // بررسی پایان بازی
-    if (state.rpsScore.player === 3 || state.rpsScore.bot === 3) {
+        toggleLoader(true);
         setTimeout(() => {
-            const winner = state.rpsScore.player === 3 ? 'شما' : 'بات';
-            showToast(`${winner} این بازی را برد!`, '🏆');
-            closeModal('rps-modal');
+            toggleLoader(false);
+            showToast('پارتنر ناشناس پیدا شد! 🎭');
+        }, 1500);
+    });
+
+    // ----------------------------------------------------
+    // 8. مینی‌گیم ۱: جرأت یا حقیقت
+    // ----------------------------------------------------
+    const todModal = document.getElementById('tod-modal');
+    document.getElementById('game-truth-or-dare')?.addEventListener('click', () => {
+        todModal?.classList.remove('hidden');
+        startTodTimer(600);
+    });
+
+    document.getElementById('btn-close-tod')?.addEventListener('click', () => {
+        todModal?.classList.add('hidden');
+    });
+
+    let todTimerInterval;
+    function startTodTimer(duration) {
+        let timer = duration, minutes, seconds;
+        clearInterval(todTimerInterval);
+        todTimerInterval = setInterval(() => {
+            minutes = parseInt(timer / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            const timerElem = document.getElementById('tod-timer');
+            if (timerElem) timerElem.textContent = minutes + ":" + seconds;
+
+            if (--timer < 0) {
+                clearInterval(todTimerInterval);
+                showToast('زمان به پایان رسید!');
+                todModal?.classList.add('hidden');
+            }
         }, 1000);
     }
-}
 
-function updateRpsScore() {
-    const total = state.rpsScore.player + state.rpsScore.bot;
-    document.getElementById('rps-score').innerText = 
-        `امتیاز: ${state.rpsScore.player}/${total}`;
-}
+    document.getElementById('btn-send-tod')?.addEventListener('click', () => {
+        const input = document.getElementById('tod-input');
+        if (!input || !input.value.trim()) return;
 
-// ==================== مدیریت VIP ====================
+        const chatBox = document.getElementById('tod-chat-box');
+        if (chatBox) {
+            const msg = document.createElement('div');
+            msg.className = 'bg-red-500/20 p-2 rounded-xl text-right ml-auto max-w-[80%] border border-red-500/30';
+            msg.textContent = input.value;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        input.value = '';
+    });
 
-async function handleBuyVip() {
-    if (state.isVip) {
-        showToast('شما قبلاً VIP هستید! ⭐');
-        return;
-    }
+    // ----------------------------------------------------
+    // 9. مینی‌گیم ۲: تست شخصیت
+    // ----------------------------------------------------
+    const personalityModal = document.getElementById('personality-modal');
+    const quizQuestions = [
+        { q: "قرار ملاقات ایده‌آل شما چطوره؟", options: ["☕ کافه آرام", "🎢 شهربازی هیجانی", "🏕️ طبیعت‌گردی"] },
+        { q: "در مواقع فراغت چکار می‌کنید؟", options: ["🎧 موسیقی و فیلم", "🎮 گیم با دوستان", "📚 مطالعه و هنر"] }
+    ];
+    let currentQuizStep = 0;
 
-    try {
-        // در اینجا از Telegram Stars استفاده می‌شود
-        if (tg.sendData) {
-            tg.sendData(JSON.stringify({ action: 'buy_vip', userId: state.userId }));
+    document.getElementById('game-personality')?.addEventListener('click', () => {
+        personalityModal?.classList.remove('hidden');
+        currentQuizStep = 0;
+        document.getElementById('quiz-container')?.classList.remove('hidden');
+        document.getElementById('quiz-result')?.classList.add('hidden');
+        renderQuizStep();
+    });
+
+    document.getElementById('btn-close-personality')?.addEventListener('click', () => {
+        personalityModal?.classList.add('hidden');
+    });
+
+    function renderQuizStep() {
+        if (currentQuizStep >= quizQuestions.length) {
+            document.getElementById('quiz-container')?.classList.add('hidden');
+            document.getElementById('quiz-result')?.classList.remove('hidden');
+            const percentElem = document.getElementById('match-percent');
+            if (percentElem) percentElem.textContent = `${Math.floor(Math.random() * 20) + 80}%`;
+            return;
         }
 
-        state.isVip = true;
-        document.getElementById('vip-status').innerText = 'VIP ✅';
-        showToast('ارتقا به VIP موفقیت‌آمیز بود! ⭐', '⭐');
-        localStorage.setItem('userVip', 'true');
+        const qData = quizQuestions[currentQuizStep];
+        const qElem = document.getElementById('quiz-question');
+        if (qElem) qElem.textContent = qData.q;
 
-    } catch (err) {
-        showError('خطا در خرید VIP');
-        console.error('VIP purchase error:', err);
+        const optionsContainer = document.getElementById('quiz-options');
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
+            qData.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full py-2 bg-white/5 border border-white/10 rounded-xl text-xs hover:bg-amber-500/20 transition';
+                btn.textContent = opt;
+                btn.onclick = () => {
+                    currentQuizStep++;
+                    renderQuizStep();
+                };
+                optionsContainer.appendChild(btn);
+            });
+        }
     }
-}
 
-function handleLogout() {
-    if (confirm('آیا می‌خواهید از حساب خود خارج شوید؟')) {
-        localStorage.removeItem('spicyProfile');
-        localStorage.removeItem('userVip');
-        state.userProfile = null;
-        state.isVip = false;
-        state.userId = null;
-        
-        document.getElementById('login-screen').classList.remove('hidden');
-        showToast('خارج شدید! 👋');
+    // ----------------------------------------------------
+    // 10. مینی‌گیم ۳: دوز نئونی (Tic-Tac-Toe)
+    // ----------------------------------------------------
+    const tttModal = document.getElementById('tictactoe-modal');
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "❌";
+    let gameActive = true;
+
+    document.getElementById('game-tictactoe')?.addEventListener('click', () => {
+        tttModal?.classList.remove('hidden');
+        resetTTT();
+    });
+
+    document.getElementById('btn-close-tictactoe')?.addEventListener('click', () => {
+        tttModal?.classList.add('hidden');
+    });
+
+    function resetTTT() {
+        board = ["", "", "", "", "", "", "", "", ""];
+        currentPlayer = "❌";
+        gameActive = true;
+        const statusElem = document.getElementById('ttt-status');
+        if (statusElem) statusElem.textContent = `نوبت: ${currentPlayer}`;
+        renderTTTBoard();
     }
-}
 
-// ==================== شروع برنامه ====================
+    function renderTTTBoard() {
+        const boardElem = document.getElementById('ttt-board');
+        if (!boardElem) return;
+        boardElem.innerHTML = '';
+        board.forEach((cell, idx) => {
+            const div = document.createElement('div');
+            div.className = `tictactoe-cell spicy-card rounded-xl border border-white/10 ${cell ? 'disabled' : ''}`;
+            div.textContent = cell;
+            div.onclick = () => handleCellClick(idx);
+            boardElem.appendChild(div);
+        });
+    }
 
-console.log('🌶️ Spicy Date App Loaded Successfully');
+    function handleCellClick(idx) {
+        if (board[idx] !== "" || !gameActive) return;
+        board[idx] = currentPlayer;
+        checkTTTWinner();
+        if (gameActive) {
+            currentPlayer = currentPlayer === "❌" ? "⭕" : "❌";
+            const statusElem = document.getElementById('ttt-status');
+            if (statusElem) statusElem.textContent = `نوبت: ${currentPlayer}`;
+        }
+        renderTTTBoard();
+    }
+
+    function checkTTTWinner() {
+        const winConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        for (let condition of winConditions) {
+            const [a, b, c] = condition;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                gameActive = false;
+                const statusElem = document.getElementById('ttt-status');
+                if (statusElem) statusElem.textContent = `بازیکن ${board[a]} برنده شد! 🎉`;
+                return;
+            }
+        }
+
+        if (!board.includes("")) {
+            gameActive = false;
+            const statusElem = document.getElementById('ttt-status');
+            if (statusElem) statusElem.textContent = "بازی مساوی شد! 🤝";
+        }
+    }
+
+    document.getElementById('btn-reset-ttt')?.addEventListener('click', resetTTT);
+
+    // ----------------------------------------------------
+    // 11. مینی‌گیم ۴: سنگ کاغذ قیچی
+    // ----------------------------------------------------
+    const rpsModal = document.getElementById('rps-modal');
+    let userScore = 0;
+
+    document.getElementById('game-rps')?.addEventListener('click', () => {
+        rpsModal?.classList.remove('hidden');
+        userScore = 0;
+        const scoreElem = document.getElementById('rps-score');
+        const resElem = document.getElementById('rps-result');
+        if (scoreElem) scoreElem.textContent = `امتیاز: ${userScore}/3`;
+        if (resElem) resElem.textContent = 'انتخاب کنید...';
+    });
+
+    document.getElementById('btn-close-rps')?.addEventListener('click', () => {
+        rpsModal?.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.rps-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const userChoice = btn.dataset.choice;
+            const choices = ['👊', '✋', '✂️'];
+            const botChoice = choices[Math.floor(Math.random() * choices.length)];
+
+            let resultText = '';
+            if (userChoice === botChoice) {
+                resultText = `مساوی! هر دو ${botChoice}`;
+            } else if (
+                (userChoice === '👊' && botChoice === '✂️') ||
+                (userChoice === '✋' && botChoice === '👊') ||
+                (userChoice === '✂️' && botChoice === '✋')
+            ) {
+                userScore++;
+                resultText = `برنده شدید! حریف ${botChoice} آورد.`;
+            } else {
+                resultText = `باختید! حریف ${botChoice} آورد.`;
+            }
+
+            const scoreElem = document.getElementById('rps-score');
+            const resElem = document.getElementById('rps-result');
+            if (scoreElem) scoreElem.textContent = `امتیاز: ${userScore}/3`;
+            if (resElem) resElem.textContent = resultText;
+
+            if (userScore >= 3) {
+                showToast('تبریک! شما برنده چالش شدید 🏆');
+                setTimeout(() => rpsModal?.classList.add('hidden'), 1000);
+            }
+        });
+    });
+
+    // ----------------------------------------------------
+    // 12. پرداخت‌های استارز تلگرام (Telegram Stars)
+    // ----------------------------------------------------
+    function handleVipPurchase() {
+        if (tg && tg.openInvoice) {
+            showToast('در حال آماده‌سازی پرداخت...', '⭐️');
+            // در حالت عملیاتی لینک فاکتور پرداختی تولید شده از ربات پاس داده می‌شود
+            const invoiceUrl = ""; 
+            if (invoiceUrl) {
+                tg.openInvoice(invoiceUrl, (status) => {
+                    if (status === 'paid') {
+                        if (currentUser) currentUser.isVip = true;
+                        saveAndInitUser();
+                        showToast('اشتراک VIP فعال شد! ⭐');
+                    }
+                });
+            } else {
+                // شبیه‌سازی تست پرداخت
+                setTimeout(() => {
+                    if (currentUser) currentUser.isVip = true;
+                    saveAndInitUser();
+                    showToast('اشتراک VIP بر روی اکانت شما فعال شد! ⭐');
+                }, 1000);
+            }
+        } else {
+            if (currentUser) currentUser.isVip = true;
+            saveAndInitUser();
+            showToast('اشتراک VIP فعال شد! ⭐');
+        }
+    }
+
+    document.getElementById('btn-buy-vip')?.addEventListener('click', handleVipPurchase);
+    document.getElementById('btn-upgrade-vip')?.addEventListener('click', handleVipPurchase);
+});
