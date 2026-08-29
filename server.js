@@ -59,20 +59,12 @@ class User {
 // ==================== Routes ====================
 
 // ROOT
+const path = require('path');
+
+app.use(express.static(__dirname));
+
 app.get('/', (req, res) => {
-    res.json({
-        message: '🌶️ Spicy Date API v1.0',
-        status: 'active',
-        endpoints: [
-            'GET /api/health',
-            'POST /api/profile/create',
-            'POST /api/profile/upload-voice',
-            'GET /api/users/discover',
-            'POST /api/interactions/action',
-            'POST /api/night-chat/match',
-            'GET /api/chats/:userId'
-        ]
-    });
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // HEALTH CHECK
