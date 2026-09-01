@@ -2,6 +2,7 @@
 // اتصال فرانت‌اند به API سرور
 // ==========================================
 const API_BASE_URL = 'https://spicy-date-api.onrender.com';
+
 async function authenticateUser() {
     if (!window.Telegram?.WebApp?.initData) return;
 
@@ -25,6 +26,7 @@ async function authenticateUser() {
 document.addEventListener('DOMContentLoaded', () => {
     authenticateUser();
 });
+
 // ==========================================
 // ۱. تنظیمات Telegram SDK
 // ==========================================
@@ -52,11 +54,11 @@ function triggerHaptic(type = 'light') {
 }
 
 // ==========================================
-// ۲. داده‌های نمونه (Mock Data)
+// ۲. داده‌های نمونه (Mock Data) + سیستم مدیریت پروفایل‌ها
 // ==========================================
 const mockUsers = [
     {
-        id: 1,
+        id: "1",
         name: "سارا",
         age: 23,
         city: "تهران",
@@ -65,7 +67,7 @@ const mockUsers = [
         interests: ["☕ کافه‌گردی", "🎧 موسیقی", "✈️ سفر"]
     },
     {
-        id: 2,
+        id: "2",
         name: "علی",
         age: 26,
         city: "شیراز",
@@ -74,7 +76,7 @@ const mockUsers = [
         interests: ["🎮 گیمینگ", "🍕 آشپزی"]
     },
     {
-        id: 3,
+        id: "3",
         name: "مریم",
         age: 21,
         city: "اصفهان",
@@ -84,7 +86,52 @@ const mockUsers = [
     }
 ];
 
+let profilesList = [];
 let currentUserIndex = 0;
+
+// دریافت لیست پروفایل‌ها از API (با پشتیبانی از Mock Data)
+async function fetchProfiles() {
+    const token = localStorage.getItem('spicy_token');
+    if (token) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/users/explore`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.profiles && data.profiles.length > 0) {
+                profilesList = data.profiles;
+                currentUserIndex = 0;
+                renderCard();
+                return;
+            }
+        } catch (err) {
+            console.warn("خطا در دریافت پروفایل‌ها از سرور، استفاده از داده‌های نمونه:", err);
+        }
+    }
+    // در صورت عدم اتصال به API یا خالی بودن پاسخ
+    profilesList = mockUsers;
+    currentUserIndex = 0;
+    renderCard();
+}
+
+// ارسال اکشن (لایک/رد/سوپرلایک) به API
+async function sendActionToAPI(targetUserId, actionType) {
+    const token = localStorage.getItem('spicy_token');
+    if (!token) return;
+
+    try {
+        await fetch(`${API_BASE_URL}/api/users/action`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ targetUserId, action: actionType })
+        });
+    } catch (err) {
+        console.error("خطا در ثبت اکشن:", err);
+    }
+}
 
 // ==========================================
 // ۳. مدیریت تب‌ها و ناوبری
@@ -122,27 +169,29 @@ function switchTab(tabName) {
 // ۴. رندر کارت و سواپ
 // ==========================================
 function renderCard() {
-    if (currentUserIndex >= mockUsers.length) {
-        currentUserIndex = 0;
+    if (!profilesList || profilesList.length === 0) return;
+
+    if (currentUserIndex >= profilesList.length) {
+        currentUserIndex = 0; // چرخش یا لود مجدد
     }
 
-    const user = mockUsers[currentUserIndex];
+    const user = profilesList[currentUserIndex];
     const cardImg = document.getElementById('card-img');
     const cardName = document.getElementById('card-name');
     const cardLoc = document.getElementById('card-location');
     const cardInterests = document.getElementById('card-interests');
     const vipBadge = document.getElementById('vip-badge');
 
-    if (cardImg) cardImg.src = user.image;
+    if (cardImg) cardImg.src = user.image || user.avatar || 'https://via.placeholder.com/600';
     if (cardName) cardName.innerText = `${user.name}، ${user.age}`;
-    if (cardLoc) cardLoc.innerText = `📍 ${user.city}`;
+    if (cardLoc) cardLoc.innerText = `📍 ${user.city || 'ایران'}`;
     
     if (vipBadge) {
         if (user.isVip) vipBadge.classList.remove('hidden');
         else vipBadge.classList.add('hidden');
     }
 
-    if (cardInterests) {
+    if (cardInterests && user.interests) {
         cardInterests.innerHTML = user.interests.map(tag => 
             `<span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">${tag}</span>`
         ).join('');
@@ -151,19 +200,24 @@ function renderCard() {
 
 function nextCard(action) {
     const card = document.getElementById('user-card');
-    if (!card) return;
+    if (!card || profilesList.length === 0) return;
+
+    const currentProfile = profilesList[currentUserIndex];
 
     if (action === 'like') {
         triggerHaptic('heavy');
         card.classList.add('card-swipe-right');
         showToast('لایک ارسال شد! 🌶️');
+        if (currentProfile?.id) sendActionToAPI(currentProfile.id, 'like');
     } else if (action === 'pass') {
         triggerHaptic('medium');
         card.classList.add('card-swipe-left');
+        if (currentProfile?.id) sendActionToAPI(currentProfile.id, 'pass');
     } else if (action === 'super') {
         triggerHaptic('success');
         card.classList.add('card-swipe-right');
         showToast('سوپرلایک فرستاده شد! ⭐');
+        if (currentProfile?.id) sendActionToAPI(currentProfile.id, 'superlike');
     }
 
     setTimeout(() => {
@@ -250,7 +304,7 @@ function checkTTTWinner() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
-    renderCard();
+    fetchProfiles();
 
     // کلیک روی دکمه‌های ناوبری پایینی
     document.querySelectorAll('.nav-btn').forEach(btn => {
