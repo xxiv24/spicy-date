@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spicy Date 🌶️</title>
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
@@ -48,7 +46,6 @@
             flex-direction: column;
         }
 
-        /* سواپ کارت‌ها */
         .card-swipe-right {
             transform: translateX(120%) rotate(15deg);
             opacity: 0;
@@ -61,7 +58,6 @@
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
-        /* پیام Toast */
         #toast {
             visibility: hidden;
             opacity: 0;
@@ -73,7 +69,6 @@
             opacity: 1;
         }
 
-        /* شبکه بازی دوز */
         .tictactoe-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -91,6 +86,25 @@
 
         .tictactoe-cell.disabled {
             pointer-events: none;
+        }
+
+        .interest-chip {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .interest-chip.selected {
+            background-color: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.8);
+            color: #f87171;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        .recording-pulse {
+            animation: pulse-red 1.5s infinite;
         }
     </style>
 </head>
@@ -115,11 +129,25 @@
             <div id="user-card" class="spicy-card w-full max-w-sm rounded-3xl overflow-hidden relative shadow-2xl border border-white/10 transition-all duration-300">
                 <div class="relative h-96 w-full">
                     <img id="card-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="User" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
                     
                     <span id="vip-badge" class="absolute top-4 right-4 bg-amber-500/80 backdrop-blur-md text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full border border-amber-300">
                         👑 VIP
                     </span>
+
+                    <!-- Voice Player روی کارت اکسپلور -->
+                    <div class="absolute top-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+                        <button id="btn-card-play-voice" class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white shadow-md active:scale-90 transition">
+                            ▶
+                        </button>
+                        <div class="flex items-center gap-0.5 h-3">
+                            <span class="w-0.5 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            <span class="w-0.5 h-3 bg-red-400 rounded-full animate-pulse"></span>
+                            <span class="w-0.5 h-1.5 bg-red-500 rounded-full"></span>
+                            <span class="w-0.5 h-2.5 bg-red-400 rounded-full animate-pulse"></span>
+                        </div>
+                        <span class="text-[9px] text-gray-300 font-mono">0:15</span>
+                    </div>
 
                     <div class="absolute bottom-4 right-4 left-4 text-white">
                         <div class="flex items-baseline gap-2">
@@ -134,14 +162,15 @@
                     </div>
                 </div>
 
-                <div class="p-4 flex items-center justify-between gap-3 bg-black/40 border-t border-white/5">
-                    <button id="btn-pass" class="flex-1 bg-white/5 hover:bg-white/10 text-red-400 p-3 rounded-2xl border border-white/5 active:scale-95 transition flex justify-center items-center text-xl">
-                        ❌
+                <!-- دکمه‌های شکیل و استاندار اکسپلور -->
+                <div class="p-4 flex items-center justify-evenly gap-4 bg-black/50 border-t border-white/5">
+                    <button id="btn-pass" class="w-14 h-14 bg-gray-800/80 hover:bg-gray-700 text-red-500 rounded-full border border-red-500/30 active:scale-90 transition flex justify-center items-center text-xl shadow-lg shadow-red-500/10">
+                        ✖
                     </button>
-                    <button id="btn-super" class="bg-amber-500/20 text-amber-400 p-3 rounded-2xl border border-amber-500/30 active:scale-95 transition flex justify-center items-center text-xl">
+                    <button id="btn-super" class="w-12 h-12 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-full border border-amber-500/40 active:scale-90 transition flex justify-center items-center text-lg shadow-lg shadow-amber-500/10">
                         ⭐
                     </button>
-                    <button id="btn-like" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white p-3 rounded-2xl shadow-lg shadow-red-500/30 active:scale-95 transition flex justify-center items-center text-xl font-bold">
+                    <button id="btn-like" class="w-14 h-14 bg-gradient-to-tr from-red-600 to-pink-500 text-white rounded-full border border-pink-400/30 shadow-lg shadow-red-500/40 active:scale-90 transition flex justify-center items-center text-xl">
                         ❤️
                     </button>
                 </div>
@@ -200,14 +229,14 @@
             </div>
         </section>
 
-        <!-- ==================== TAB 4: PROFILE (پروفایل حرفه‌ای) ==================== -->
-        <section id="tab-profile" class="tab-content flex-1 max-w-sm mx-auto w-full space-y-4 overflow-y-auto">
+        <!-- ==================== TAB 4: PROFILE ==================== -->
+        <section id="tab-profile" class="tab-content flex-1 max-w-sm mx-auto w-full space-y-4 overflow-y-auto pb-6">
             
             <!-- کارت اصلی پروفایل -->
             <div class="spicy-card p-5 rounded-3xl text-center relative border border-white/10">
                 <div class="relative w-24 h-24 mx-auto mb-3">
                     <img id="profile-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-red-500 shadow-lg shadow-red-500/20">
-                    <button id="btn-edit-profile" class="absolute bottom-0 left-0 bg-red-600 text-white p-1.5 rounded-full text-xs shadow-md border border-white/20 active:scale-95 transition">
+                    <button id="btn-edit-profile" class="absolute bottom-0 left-0 bg-red-600 text-white p-2 rounded-full text-xs shadow-md border border-white/20 active:scale-95 transition">
                         ✏️
                     </button>
                 </div>
@@ -221,12 +250,12 @@
                     </span>
                 </div>
 
-                <p id="profile-bio" class="text-xs text-gray-300 mt-3 px-2 italic bg-white/5 py-2 rounded-xl">
+                <p id="profile-bio" class="text-xs text-gray-300 mt-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/5 leading-relaxed text-right">
                     عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮
                 </p>
 
                 <div id="profile-interests" class="flex flex-wrap justify-center gap-1.5 mt-3">
-                    <!-- تگ‌های علاقه‌مندی -->
+                    <!-- تگ‌های انتخابی کاربر -->
                 </div>
             </div>
 
@@ -246,20 +275,47 @@
                 </div>
             </div>
 
-            <!-- وویس اسپایسی (Spicy Voice) -->
-            <div class="spicy-card p-4 rounded-2xl border border-white/10 flex items-center justify-between">
-                <div>
-                    <h3 class="font-bold text-xs">صدای اسپایسی من 🎙️</h3>
-                    <p class="text-[10px] text-gray-400 mt-0.5">ضبط ۱۵ ثانیه صدای معرفی</p>
+            <!-- ضبط صدای ۱۵ ثانیه‌ای (پروفایل) -->
+            <div class="spicy-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-red-950/20 to-transparent">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="font-bold text-xs flex items-center gap-1.5">
+                            <span>صدای اسپایسی من</span>
+                            <span class="text-red-500">🎙️</span>
+                        </h3>
+                        <p class="text-[10px] text-gray-400 mt-0.5">ضبط ۱۵ ثانیه ویس معرفی هویت</p>
+                    </div>
+                    <span id="voice-timer" class="text-xs font-mono bg-black/40 text-red-400 px-2.5 py-1 rounded-md border border-red-500/20">00:15</span>
                 </div>
-                <div class="flex gap-2">
-                    <button id="btn-play-voice" class="bg-white/10 hover:bg-white/20 text-white p-2 rounded-xl text-xs active:scale-95 transition">
-                        ▶️ شنیدن
+
+                <div class="flex items-center gap-2">
+                    <button id="btn-play-voice" class="flex-1 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition flex justify-center items-center gap-1 border border-white/5">
+                        <span>▶️</span> شنیدن ویس
                     </button>
-                    <button id="btn-record-voice" class="bg-red-500/20 text-red-400 border border-red-500/30 p-2 rounded-xl text-xs active:scale-95 transition">
-                        🎙️ ضبط
+                    <button id="btn-record-voice" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-red-500/20 active:scale-95 transition flex justify-center items-center gap-1">
+                        <span>🎙️</span> شروع ضبط
                     </button>
                 </div>
+            </div>
+
+            <!-- بنر عضویت کانال تلگرام -->
+            <a href="https://t.me/SpicyDateApp" target="_blank" class="spicy-card p-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 flex items-center justify-between block active:scale-98 transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-cyan-500/20 rounded-xl flex items-center justify-center text-cyan-400 text-lg border border-cyan-500/30">
+                        ✈️
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs text-cyan-200">عضویت در کانال اسپایسی</h4>
+                        <p class="text-[10px] text-cyan-400/80 mt-0.5">دریافت کوپن‌های VIP و اخبار اپ</p>
+                    </div>
+                </div>
+                <span class="text-xs bg-cyan-500/20 text-cyan-300 px-2.5 py-1 rounded-lg border border-cyan-500/30 font-bold">عضویت</span>
+            </a>
+
+            <!-- بنر تبلیغات / اسپانسر -->
+            <div class="spicy-card p-3 rounded-2xl border border-white/5 text-center bg-white/[0.02]">
+                <span class="text-[9px] text-gray-500 uppercase tracking-widest block mb-1">تبلیغات</span>
+                <p class="text-xs text-gray-300 font-semibold">💎 ۵۰٪ تخفیف ویژه خرید تلگرام پرمیوم</p>
             </div>
 
             <!-- دکمه ویژه خرید اشتراک Telegram Stars -->
@@ -330,23 +386,51 @@
         </div>
     </div>
 
-    <!-- Modal 4: ویرایش پروفایل -->
-    <div id="edit-profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
-        <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-right border border-red-500/30 shadow-2xl">
+    <!-- Modal 4: ویرایش کامل پروفایل -->
+    <div id="edit-profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden overflow-y-auto">
+        <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-right border border-red-500/30 shadow-2xl my-auto">
             <h3 class="font-bold text-lg mb-4 text-center">ویرایش پروفایل ✏️</h3>
-            <div class="space-y-3 text-xs">
+            
+            <div class="space-y-4 text-xs">
+                <!-- انتخاب و آپلود عکس -->
+                <div class="text-center">
+                    <label class="block text-gray-400 mb-2">عکس پروفایل</label>
+                    <div class="relative w-20 h-20 mx-auto">
+                        <img id="edit-preview-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80" class="w-full h-full rounded-full object-cover border-2 border-red-500/50">
+                        <label for="input-avatar-file" class="absolute bottom-0 left-0 bg-red-600 text-white p-1.5 rounded-full cursor-pointer shadow-md">
+                            📸
+                        </label>
+                        <input type="file" id="input-avatar-file" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- نام -->
                 <div>
-                    <label class="block text-gray-400 mb-1">نام</label>
+                    <label class="block text-gray-400 mb-1">نام و سن</label>
                     <input type="text" id="input-edit-name" value="کاربر اسپایسی" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">
                 </div>
+
+                <!-- بیوگرافی (با حد کاراکتر ۱۰۰) -->
                 <div>
-                    <label class="block text-gray-400 mb-1">بیوگرافی</label>
-                    <textarea id="input-edit-bio" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮</textarea>
+                    <div class="flex justify-between text-gray-400 mb-1">
+                        <label>بیوگرافی (حداکثر ۱۰ حرف)</label>
+                        <span id="bio-char-count" class="text-[10px] text-red-400">0/100</span>
+                    </div>
+                    <textarea id="input-edit-bio" maxlength="100" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮</textarea>
+                </div>
+
+                <!-- انتخاب علاقه مندی ها (حداکثر ۳ مورد از ۱۰ مورد) -->
+                <div>
+                    <label class="block text-gray-400 mb-1.5">علاقه‌مندی‌ها (انتخاب حداکثر ۳ مورد):</label>
+                    <div id="interests-selector" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
+                        <!-- تگ‌ها توسط JS رندر می‌شوند -->
+                    </div>
                 </div>
             </div>
+
             <div class="flex gap-2 mt-5">
-                <button id="btn-save-edit-profile" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-red-500/20">ذخیره</button>
-                <button id="btn-close-edit-profile" class="flex-1 bg-white/10 text-gray-300 py-2.5 rounded-xl text-xs">انصراف</button>
+                <button id="btn-save-edit-profile" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-red-500/20 active:scale-95 transition">ذخیره تغییرات</button>
+                <button id="btn-close-edit-profile" class="flex-1 bg-white/10 text-gray-300 py-2.5 rounded-xl text-xs active:scale-95 transition">انصراف</button>
             </div>
         </div>
     </div>
@@ -357,7 +441,6 @@
         <span id="toast-message">پیام سیستم</span>
     </div>
 
-    <!-- External Script -->
     <script src="app.js"></script>
 </body>
 </html>
