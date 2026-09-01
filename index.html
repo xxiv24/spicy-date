@@ -4,251 +4,360 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spicy Date 🌶️</title>
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;900&display=swap');
+        
         body {
-            background-color: #0f0c20;
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #0d0914;
             color: #ffffff;
-            font-family: system-ui, -apple-system, sans-serif;
             user-select: none;
             -webkit-user-select: none;
             overflow-x: hidden;
         }
+
+        .spicy-bg {
+            background: radial-gradient(circle at top right, #2a081a 0%, #0d0914 60%);
+        }
+
         .spicy-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-modal {
+            background: rgba(18, 12, 28, 0.95);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
-        /* مدیریت نمایش تب‌ها */
+
         .tab-content {
             display: none;
-            width: 100%;
         }
+
         .tab-content.active {
             display: flex;
             flex-direction: column;
         }
 
-        /* انیمیشن‌های سواپ کارت */
-        .card-swipe-left {
-            animation: swipeLeft 0.3s forwards ease-in-out;
-        }
+        /* سواپ کارت‌ها */
         .card-swipe-right {
-            animation: swipeRight 0.3s forwards ease-in-out;
-        }
-
-        @keyframes swipeLeft {
-            to { transform: translateX(-120%) rotate(-15deg); opacity: 0; }
-        }
-        @keyframes swipeRight {
-            to { transform: translateX(120%) rotate(15deg); opacity: 0; }
-        }
-
-        #toast {
-            transition: all 0.3s ease;
-            transform: translateY(100px);
+            transform: translateX(120%) rotate(15deg);
             opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
+
+        .card-swipe-left {
+            transform: translateX(-120%) rotate(-15deg);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* پیام Toast */
+        #toast {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
         #toast.show {
-            transform: translateY(0);
+            visibility: visible;
             opacity: 1;
         }
+
+        /* شبکه بازی دوز */
+        .tictactoe-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
         .tictactoe-cell {
+            aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            height: 60px;
+            font-size: 2rem;
             cursor: pointer;
         }
+
         .tictactoe-cell.disabled {
             pointer-events: none;
         }
-        .fade-in {
-            animation: fadeIn 0.2s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.97); }
-            to { opacity: 1; transform: scale(1); }
-        }
     </style>
 </head>
-<body class="h-screen flex flex-col justify-between p-3 max-w-md mx-auto relative overflow-hidden">
+<body class="spicy-bg min-h-screen flex flex-col justify-between overflow-hidden">
 
-    <div id="toast" class="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between p-3 rounded-2xl spicy-card border-red-500/30 text-xs shadow-lg">
-        <span id="toast-message" class="font-medium text-white">پیام نمونه</span>
-        <span id="toast-icon" class="text-base">🌶️</span>
-    </div>
-
-    <header class="flex justify-between items-center py-2 px-1 z-20">
-        <span class="font-black text-base text-red-500 flex items-center gap-1">🌶️ Spicy Date</span>
-        <button id="btn-upgrade-vip" class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full font-bold">VIP ⭐️</button>
+    <!-- Header -->
+    <header class="p-4 flex items-center justify-between border-b border-white/5">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🌶️</span>
+            <h1 class="font-black text-xl bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">Spicy Date</h1>
+        </div>
+        <button id="btn-buy-vip" class="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-bold text-xs px-3 py-1.5 rounded-full shadow-lg shadow-amber-500/20 active:scale-95 transition">
+            <span>👑 VIP</span>
+        </button>
     </header>
 
-    <main class="flex-1 overflow-y-auto pb-20 w-full relative">
+    <!-- Main Content Area -->
+    <main class="flex-1 relative overflow-y-auto p-4 flex flex-col justify-center">
 
-        <section id="tab-explore" class="tab-content active h-full justify-between space-y-3">
-            <div id="user-card" class="relative flex-1 rounded-3xl overflow-hidden spicy-card flex flex-col justify-end p-4 min-h-[380px] fade-in mt-1">
-                <img id="card-img" src="" class="absolute inset-0 w-full h-full object-cover -z-10">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#0f0c20] via-black/20 to-transparent -z-10"></div>
+        <!-- ==================== TAB 1: EXPLORE ==================== -->
+        <section id="tab-explore" class="tab-content active flex-1 justify-center items-center">
+            <div id="user-card" class="spicy-card w-full max-w-sm rounded-3xl overflow-hidden relative shadow-2xl border border-white/10 transition-all duration-300">
+                <div class="relative h-96 w-full">
+                    <img id="card-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="User" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                    
+                    <span id="vip-badge" class="absolute top-4 right-4 bg-amber-500/80 backdrop-blur-md text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full border border-amber-300">
+                        👑 VIP
+                    </span>
+
+                    <div class="absolute bottom-4 right-4 left-4 text-white">
+                        <div class="flex items-baseline gap-2">
+                            <h2 id="card-name" class="text-2xl font-bold">سارا، ۲۳</h2>
+                        </div>
+                        <p id="card-location" class="text-xs text-gray-300 mt-1">📍 تهران</p>
+                        
+                        <div id="card-interests" class="flex flex-wrap gap-1.5 mt-3">
+                            <span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">☕ کافه‌گردی</span>
+                            <span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">🎧 موسیقی</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 flex items-center justify-between gap-3 bg-black/40 border-t border-white/5">
+                    <button id="btn-pass" class="flex-1 bg-white/5 hover:bg-white/10 text-red-400 p-3 rounded-2xl border border-white/5 active:scale-95 transition flex justify-center items-center text-xl">
+                        ❌
+                    </button>
+                    <button id="btn-super" class="bg-amber-500/20 text-amber-400 p-3 rounded-2xl border border-amber-500/30 active:scale-95 transition flex justify-center items-center text-xl">
+                        ⭐
+                    </button>
+                    <button id="btn-like" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white p-3 rounded-2xl shadow-lg shadow-red-500/30 active:scale-95 transition flex justify-center items-center text-xl font-bold">
+                        ❤️
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: GAMES ==================== -->
+        <section id="tab-games" class="tab-content flex-1 max-w-sm mx-auto w-full space-y-4">
+            <h2 class="text-lg font-bold text-gray-200 mb-2">مینی‌گیم‌های چندنفره 🎮</h2>
+            
+            <div id="game-tictactoe" class="spicy-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition border border-white/10">
+                <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center text-2xl border border-indigo-500/30">
+                    ❌⭕
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">بازی دوز (Tic-Tac-Toe)</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">چالش سرعت و هوش با پارتنر</p>
+                </div>
+            </div>
+
+            <div id="game-truth-or-dare" class="spicy-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition border border-white/10">
+                <div class="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center text-2xl border border-pink-500/30">
+                    🎲
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">جرأت یا حقیقت اسپایسی</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">سوالات داغ برای یخ‌شکنی!</p>
+                </div>
+            </div>
+
+            <div id="game-rps" class="spicy-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition border border-white/10">
+                <div class="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center text-2xl border border-amber-500/30">
+                    ✂️
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">سنگ کاغذ قیچی</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">رقابت سریع ۳ دوره‌ای</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: CHATS ==================== -->
+        <section id="tab-chats" class="tab-content flex-1 max-w-sm mx-auto w-full">
+            <h2 class="text-lg font-bold text-gray-200 mb-4">گفتگوها 💬</h2>
+            <div class="space-y-3">
+                <div class="spicy-card p-3 rounded-2xl flex items-center gap-3 border border-white/10">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" class="w-12 h-12 rounded-full object-cover border border-red-500/50">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-sm">سارا</h4>
+                            <span class="text-[10px] text-gray-400">14:20</span>
+                        </div>
+                        <p class="text-xs text-gray-400 truncate mt-1">موافقم! کی بریم کافه؟ ☕</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: PROFILE (پروفایل حرفه‌ای) ==================== -->
+        <section id="tab-profile" class="tab-content flex-1 max-w-sm mx-auto w-full space-y-4 overflow-y-auto">
+            
+            <!-- کارت اصلی پروفایل -->
+            <div class="spicy-card p-5 rounded-3xl text-center relative border border-white/10">
+                <div class="relative w-24 h-24 mx-auto mb-3">
+                    <img id="profile-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-red-500 shadow-lg shadow-red-500/20">
+                    <button id="btn-edit-profile" class="absolute bottom-0 left-0 bg-red-600 text-white p-1.5 rounded-full text-xs shadow-md border border-white/20 active:scale-95 transition">
+                        ✏️
+                    </button>
+                </div>
                 
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2">
-                        <h2 id="card-name" class="text-xl font-bold text-white">...</h2>
-                        <span id="vip-badge" class="hidden text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-bold">VIP</span>
-                    </div>
-                    <p id="card-location" class="text-xs text-gray-300">📍 ...</p>
-                    <div id="card-interests" class="flex flex-wrap gap-1"></div>
+                <h2 id="profile-name" class="text-xl font-bold">کاربر اسپایسی، ۲۴</h2>
+                <p id="profile-city" class="text-xs text-gray-400 mt-1">📍 تهران</p>
+                
+                <div class="mt-2">
+                    <span id="profile-vip-badge" class="inline-block text-[10px] bg-gray-800 text-gray-300 px-3 py-1 rounded-full border border-white/10">
+                        اشتراک معمولی
+                    </span>
+                </div>
 
-                    <div class="pt-2 flex items-center gap-2">
-                        <button id="btn-play-voice" class="w-9 h-9 rounded-full bg-red-500 flex items-center justify-center text-xs text-white shadow-lg active:scale-95">▶</button>
-                        <span class="text-[11px] text-gray-200 font-medium">ویس ۱۵ ثانیه‌ای (Spicy Voice)</span>
-                    </div>
+                <p id="profile-bio" class="text-xs text-gray-300 mt-3 px-2 italic bg-white/5 py-2 rounded-xl">
+                    عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮
+                </p>
+
+                <div id="profile-interests" class="flex flex-wrap justify-center gap-1.5 mt-3">
+                    <!-- تگ‌های علاقه‌مندی -->
                 </div>
             </div>
 
-            <div class="flex items-center justify-around py-3">
-                <button id="btn-game" class="w-10 h-10 rounded-full spicy-card border-purple-500/30 text-purple-400 text-sm flex items-center justify-center active:scale-95">🎮</button>
-                <button id="btn-like" class="w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 to-pink-500 text-xl flex items-center justify-center shadow-lg shadow-red-500/40 active:scale-95">🌶️</button>
-                <button id="btn-super" class="w-10 h-10 rounded-full spicy-card border-amber-500/30 text-amber-400 text-sm flex items-center justify-center active:scale-95">⭐</button>
-                <button id="btn-pass" class="w-12 h-12 rounded-full spicy-card border-gray-500/30 text-lg flex items-center justify-center active:scale-95">❌</button>
-            </div>
-        </section>
-
-        <section id="tab-games" class="tab-content space-y-3 pt-2">
-            <h2 class="font-bold text-sm text-gray-200 py-1">مینی‌گیم‌های دو نفره 🎮</h2>
-            <div class="grid grid-cols-2 gap-2">
-                <div id="game-truth-or-dare" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-red-500/50 transition">
-                    <span class="text-2xl">🔥</span>
-                    <h3 class="font-bold text-xs">جرأت یا حقیقت</h3>
-                    <p class="text-[9px] text-gray-400">چت ۱۰ دقیقه‌ای با تایمر معکوس</p>
+            <!-- آمار فعالیت -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="spicy-card p-3 rounded-2xl text-center border border-white/5">
+                    <span class="block text-lg font-bold text-red-400" id="stat-likes">۱۲</span>
+                    <span class="text-[10px] text-gray-400">لایک‌ها ❤️</span>
                 </div>
-                <div id="game-personality" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-amber-500/50 transition">
-                    <span class="text-2xl">🧩</span>
-                    <h3 class="font-bold text-xs">تست شخصیت</h3>
-                    <p class="text-[9px] text-gray-400">سنجش درصد شباهت و تطابق</p>
+                <div class="spicy-card p-3 rounded-2xl text-center border border-white/5">
+                    <span class="block text-lg font-bold text-pink-400" id="stat-matches">۴</span>
+                    <span class="text-[10px] text-gray-400">مچ‌ها 🤝</span>
                 </div>
-                <div id="game-tictactoe" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-blue-500/50 transition">
-                    <span class="text-2xl">❌⭕</span>
-                    <h3 class="font-bold text-xs">دوز نئونی</h3>
-                    <p class="text-[9px] text-gray-400">رقابت سریع آنلاین</p>
-                </div>
-                <div id="game-rps" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-green-500/50 transition">
-                    <span class="text-2xl">✂️</span>
-                    <h3 class="font-bold text-xs">سنگ کاغذ قیچی</h3>
-                    <p class="text-[9px] text-gray-400">چالش بهترین از ۳ دور</p>
+                <div class="spicy-card p-3 rounded-2xl text-center border border-white/5">
+                    <span class="block text-lg font-bold text-amber-400" id="stat-superlikes">۲</span>
+                    <span class="text-[10px] text-gray-400">سوپرلایک ⭐</span>
                 </div>
             </div>
 
-            <div id="btn-night-chat" class="spicy-card p-4 rounded-2xl border-amber-500/30 flex items-center justify-between cursor-pointer mt-3">
+            <!-- وویس اسپایسی (Spicy Voice) -->
+            <div class="spicy-card p-4 rounded-2xl border border-white/10 flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-xs text-amber-400">چت ماسک شبانه 🎭 (VIP)</h3>
-                    <p class="text-[9px] text-gray-400">گفتگوی ناشناس ساعت ۲۲ الی ۲ بامداد</p>
+                    <h3 class="font-bold text-xs">صدای اسپایسی من 🎙️</h3>
+                    <p class="text-[10px] text-gray-400 mt-0.5">ضبط ۱۵ ثانیه صدای معرفی</p>
                 </div>
-                <span class="text-xs bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-xl font-bold">ورود</span>
-            </div>
-        </section>
-
-        <section id="tab-chats" class="tab-content space-y-3 pt-2">
-            <h2 class="font-bold text-sm text-gray-200 py-1">مسابقه‌ها و گفت‌وگوها 💬</h2>
-            <div id="chats-list" class="space-y-2">
-                <div class="spicy-card p-3 rounded-2xl flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center font-bold">🌶️</div>
-                    <div>
-                        <h4 class="text-xs font-bold">تیم پشتیبانی Spicy Date</h4>
-                        <p class="text-[10px] text-gray-400">به مینی‌اپ خوش آمدید!</p>
-                    </div>
+                <div class="flex gap-2">
+                    <button id="btn-play-voice" class="bg-white/10 hover:bg-white/20 text-white p-2 rounded-xl text-xs active:scale-95 transition">
+                        ▶️ شنیدن
+                    </button>
+                    <button id="btn-record-voice" class="bg-red-500/20 text-red-400 border border-red-500/30 p-2 rounded-xl text-xs active:scale-95 transition">
+                        🎙️ ضبط
+                    </button>
                 </div>
             </div>
-        </section>
 
-        <section id="tab-profile" class="tab-content space-y-4 pt-2">
-            <div class="spicy-card p-5 rounded-3xl text-center space-y-3">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-red-500 to-purple-600 border-2 border-white/20 mx-auto flex items-center justify-center text-3xl shadow-lg">👤</div>
-                <div>
-                    <h2 id="prof-name" class="font-bold text-base">کاربر Spicy</h2>
-                    <p id="prof-info" class="text-xs text-gray-400 mt-0.5">📍 تهران</p>
-                </div>
-                <span id="vip-status" class="inline-block text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-bold">اشتراک معمولی</span>
-            </div>
-
-            <div class="space-y-2 pt-2">
-                <button id="btn-buy-vip" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-2xl font-bold text-xs text-black shadow-lg shadow-amber-500/20 active:scale-95">
-                    خرید اشتراک VIP با Telegram Stars ⭐️
-                </button>
-                <button id="btn-logout" class="w-full py-3 spicy-card text-red-400 rounded-2xl text-xs font-bold active:scale-95">خروج از حساب</button>
-            </div>
+            <!-- دکمه ویژه خرید اشتراک Telegram Stars -->
+            <button id="btn-stars-subscribe" class="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black font-extrabold py-3.5 px-4 rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 active:scale-98 transition">
+                <span>🌟 خرید اشتراک VIP با Telegram Stars</span>
+            </button>
         </section>
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#0f0c20]/95 backdrop-blur-md border-t border-white/10 px-6 py-2.5 flex justify-between items-center max-w-md mx-auto z-40">
-        <button class="nav-btn active text-red-500 flex flex-col items-center gap-1" data-tab="explore">
-            <span class="text-lg">🌶️</span>
-            <span class="text-[9px] font-bold">اکسپلور</span>
+    <!-- Bottom Navigation Bar -->
+    <nav class="p-2 spicy-card border-t border-white/10 flex justify-around items-center">
+        <button class="nav-btn active flex flex-col items-center gap-1 text-red-500 text-xs" data-tab="explore">
+            <span class="text-xl">🌶️</span>
+            <span>اکسپلور</span>
         </button>
-        <button class="nav-btn text-gray-400 flex flex-col items-center gap-1" data-tab="games">
-            <span class="text-lg">🎮</span>
-            <span class="text-[9px] font-bold">بازی‌ها</span>
+        <button class="nav-btn flex flex-col items-center gap-1 text-gray-400 text-xs" data-tab="games">
+            <span class="text-xl">🎮</span>
+            <span>بازی‌ها</span>
         </button>
-        <button class="nav-btn text-gray-400 flex flex-col items-center gap-1" data-tab="chats">
-            <span class="text-lg">💬</span>
-            <span class="text-[9px] font-bold">چت‌ها</span>
+        <button class="nav-btn flex flex-col items-center gap-1 text-gray-400 text-xs" data-tab="chats">
+            <span class="text-xl">💬</span>
+            <span>چت‌ها</span>
         </button>
-        <button class="nav-btn text-gray-400 flex flex-col items-center gap-1" data-tab="profile">
-            <span class="text-lg">👤</span>
-            <span class="text-[9px] font-bold">پروفایل</span>
+        <button class="nav-btn flex flex-col items-center gap-1 text-gray-400 text-xs" data-tab="profile">
+            <span class="text-xl">👤</span>
+            <span>پروفایل</span>
         </button>
     </nav>
 
-    <div id="tod-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="spicy-card w-full p-4 rounded-3xl space-y-3">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-xs">چت جرأت یا حقیقت 🔥</h3>
-                <button id="btn-close-tod" class="text-gray-400 text-sm">✕</button>
-            </div>
-            <div id="tod-chat-box" class="h-40 overflow-y-auto space-y-2 text-xs p-2 spicy-card rounded-xl">
-                <div class="bg-white/5 p-2 rounded-xl text-gray-300">سیستم: چت ۱۰ دقیقه‌ای آغاز شد!</div>
-            </div>
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal 1: بازی دوز -->
+    <div id="tictactoe-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
+        <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-center border border-indigo-500/30 shadow-2xl">
+            <h3 class="font-bold text-lg mb-2">بازی دوز ❌⭕</h3>
+            <div id="ttt-status" class="text-xs text-indigo-300 mb-4">نوبت: ❌</div>
+            <div id="ttt-board" class="tictactoe-grid mb-4"></div>
             <div class="flex gap-2">
-                <input id="tod-input" type="text" placeholder="پیام شما..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-2 text-xs text-white outline-none">
-                <button id="btn-send-tod" class="px-3 bg-red-500 rounded-xl text-xs font-bold">ارسال</button>
+                <button id="btn-reset-ttt" class="flex-1 bg-indigo-600/30 text-indigo-300 py-2 rounded-xl text-xs border border-indigo-500/30">شروع مجدد</button>
+                <button id="btn-close-tictactoe" class="flex-1 bg-white/10 text-gray-300 py-2 rounded-xl text-xs">بستن</button>
             </div>
         </div>
     </div>
 
-    <div id="tictactoe-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="spicy-card w-full p-4 rounded-3xl space-y-3 text-center">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-xs">دوز نئونی ❌⭕</h3>
-                <button id="btn-close-tictactoe" class="text-gray-400 text-sm">✕</button>
-            </div>
-            <p id="ttt-status" class="text-xs text-amber-400">نوبت: ❌</p>
-            <div id="ttt-board" class="grid grid-cols-3 gap-2"></div>
-            <button id="btn-reset-ttt" class="w-full py-2 spicy-card text-xs rounded-xl font-bold">شروع مجدد</button>
+    <!-- Modal 2: جرأت یا حقیقت -->
+    <div id="tod-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
+        <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-center border border-pink-500/30 shadow-2xl">
+            <h3 class="font-bold text-lg mb-3">جرأت یا حقیقت 🎲</h3>
+            <p id="tod-question" class="text-xs text-gray-300 mb-5 bg-white/5 p-3 rounded-xl border border-white/5">
+                یک راز عجیب از خودت رو که کسی نمیدونه بگو!
+            </p>
+            <button id="btn-close-tod" class="w-full bg-pink-600/30 text-pink-300 py-2.5 rounded-xl text-xs border border-pink-500/30">بستن</button>
         </div>
     </div>
 
-    <div id="rps-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="spicy-card w-full p-4 rounded-3xl space-y-4 text-center">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-xs">سنگ کاغذ قیچی ✂️</h3>
-                <button id="btn-close-rps" class="text-gray-400 text-sm">✕</button>
+    <!-- Modal 3: سنگ کاغذ قیچی -->
+    <div id="rps-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
+        <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-center border border-amber-500/30 shadow-2xl">
+            <h3 class="font-bold text-lg mb-3">سنگ کاغذ قیچی ✂️</h3>
+            <p class="text-xs text-amber-300 mb-4">انتخاب کن:</p>
+            <div class="flex justify-center gap-4 text-3xl mb-5">
+                <button class="bg-white/5 p-3 rounded-2xl border border-white/10 active:scale-95">✊</button>
+                <button class="bg-white/5 p-3 rounded-2xl border border-white/10 active:scale-95">✋</button>
+                <button class="bg-white/5 p-3 rounded-2xl border border-white/10 active:scale-95">✌️</button>
             </div>
-            <p id="rps-score" class="text-xs font-bold text-amber-400">امتیاز: 0/3</p>
-            <p id="rps-result" class="text-xs text-gray-300">انتخاب کنید...</p>
-            <div class="flex justify-around pt-2">
-                <button class="rps-btn text-2xl p-3 spicy-card rounded-2xl" data-choice="👊">👊</button>
-                <button class="rps-btn text-2xl p-3 spicy-card rounded-2xl" data-choice="✋">✋</button>
-                <button class="rps-btn text-2xl p-3 spicy-card rounded-2xl" data-choice="✂️">✂️</button>
+            <button id="btn-close-rps" class="w-full bg-amber-600/30 text-amber-300 py-2.5 rounded-xl text-xs border border-amber-500/30">انصراف</button>
+        </div>
+    </div>
+
+    <!-- Modal 4: ویرایش پروفایل -->
+    <div id="edit-profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
+        <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-right border border-red-500/30 shadow-2xl">
+            <h3 class="font-bold text-lg mb-4 text-center">ویرایش پروفایل ✏️</h3>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1">نام</label>
+                    <input type="text" id="input-edit-name" value="کاربر اسپایسی" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">بیوگرافی</label>
+                    <textarea id="input-edit-bio" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮</textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-5">
+                <button id="btn-save-edit-profile" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-red-500/20">ذخیره</button>
+                <button id="btn-close-edit-profile" class="flex-1 bg-white/10 text-gray-300 py-2.5 rounded-xl text-xs">انصراف</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js" defer></script>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 border border-white/20 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 backdrop-blur-md">
+        <span id="toast-icon">🌶️</span>
+        <span id="toast-message">پیام سیستم</span>
+    </div>
+
+    <!-- External Script -->
+    <script src="app.js"></script>
 </body>
 </html>
