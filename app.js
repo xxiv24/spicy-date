@@ -1,8 +1,9 @@
 // ==========================================
-// Spicy Date 🌶️ - Fixed Persistence & Voice System
+// Spicy Date 🌶️ - Optimized Profile, Voice Delete, VIP Modal
 // ==========================================
 
-const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
+const STORAGE_KEY = 'spicy_date_user_profile_v1.2';
+const TELEGRAM_CHANNEL_URL = 'https://t.me/SpicyDateApp'; // لینک کانال تلگرام
 
 const IRAN_CITIES = [
     "تهران", "مشهد", "اصفهان", "کرج", "شیراز", "تبریز", "قم", "اهواز", 
@@ -12,7 +13,7 @@ const IRAN_CITIES = [
 const ALL_INTERESTS = [
     "☕ کافه‌گردی", "🎮 گیمینگ", "🎧 موسیقی", "✈️ سفر", 
     "🏋️ ورزش", "📸 عکاسی", "🍕 آشپزی", "🎬 فیلم و سریال",
-    "📚 کتابخوانی", "🎨 هنر و طراحی"
+    "📚 کتابخوانی", "ART هنر"
 ];
 
 const tg = window.Telegram?.WebApp;
@@ -23,15 +24,15 @@ if (tg) {
 
 function loadProfile() {
     const defaultData = {
-        name: tg?.initDataUnsafe?.user?.first_name || "کاربر اسپایسی",
+        name: tg?.initDataUnsafe?.user?.first_name || "کاربر",
         age: 24,
         gender: "زن",
         city: "تهران",
-        bio: "عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮",
-        isVip: true,
-        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-        interests: ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"],
-        audioBase64: null
+        bio: "Spicy Date user 🔥",
+        isVip: false,
+        image: "https://via.placeholder.com/600x800/2a081a/FFFFFF?text=Setup+Profile",
+        interests: ["🎧 موسیقی", "✈️ سفر"],
+        audioBase64: null // ویس ضبط شده
     };
 
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -48,6 +49,7 @@ function loadProfile() {
 let profile = loadProfile();
 let tempInterests = [...profile.interests];
 
+// متغیرهای ویس
 let mediaRecorder = null;
 let audioChunks = [];
 let audioInstance = null;
@@ -59,6 +61,7 @@ function saveProfile() {
 }
 
 function renderUI() {
+    // ۱. پروفایل شخصی
     document.getElementById('profile-img').src = profile.image;
     document.getElementById('profile-name-age').innerText = `${profile.name}، ${profile.age}`;
     document.getElementById('profile-city').innerText = `📍 ${profile.city}`;
@@ -69,20 +72,45 @@ function renderUI() {
         `<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">${t}</span>`
     ).join('');
 
+    // نشان VIP در پروفایل
+    const vipBadge = document.getElementById('profile-vip-badge');
+    if (profile.isVip) {
+        vipBadge.innerText = 'حساب VIP 👑';
+        vipBadge.className = 'inline-block text-[9px] bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-black px-2.5 py-0.5 rounded-full border border-amber-300';
+    } else {
+        vipBadge.innerText = 'اشتراک معمولی';
+        vipBadge.className = 'inline-block text-[9px] bg-gray-800 text-gray-300 px-2.5 py-0.5 rounded-full border border-white/10';
+    }
+
+    // کنترل دکمه حذف ویس
+    const deleteVoiceBtn = document.getElementById('btn-delete-voice');
+    if (profile.audioBase64) {
+        deleteVoiceBtn.classList.remove('hidden');
+        document.getElementById('play-voice-label').innerText = '▶️ شنیدن ویس';
+    } else {
+        deleteVoiceBtn.classList.add('hidden');
+        document.getElementById('play-voice-label').innerText = '▶️ (بدون ویس)';
+    }
+
+    // ۲. کارت اکسپلور (نمونه)
     document.getElementById('card-img').src = profile.image;
     document.getElementById('card-name-age').innerText = `${profile.name}، ${profile.age}`;
     document.getElementById('card-location').innerText = `📍 ${profile.city} | ${profile.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
     document.getElementById('card-interests').innerHTML = profile.interests.map(t => 
         `<span class="text-[9px] bg-white/10 px-2 py-0.5 rounded-full">${t}</span>`
     ).join('');
+    document.getElementById('card-vip-badge').style.display = profile.isVip ? 'block' : 'none';
 }
 
-// سیستم ضبط و پخش صدا
+// ==========================================
+// سیستم ضبط، پخش و حذف صدا
+// ==========================================
 async function startRecording() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
         
+        // سازگاری با آیفون و اندروید
         const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
         mediaRecorder = new MediaRecorder(stream, { mimeType });
 
@@ -93,15 +121,16 @@ async function startRecording() {
             const reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = () => {
-                profile.audioBase64 = reader.result;
+                profile.audioBase64 = reader.result; // ذخیره ویس به صورت Base64
                 saveProfile();
-                showToast('ویس با موفقیت ثبت و ذخیره شد! 🎙️');
+                renderUI();
+                showToast('ویس با موفقیت ثبت شد! 🎙️');
             };
         };
 
         mediaRecorder.start();
         recordSecondsLeft = 15;
-        document.getElementById('record-voice-label').innerText = 'توقف ضبط';
+        document.getElementById('record-voice-label').innerText = '⏹️ توقف ضبط';
         document.getElementById('btn-record-voice').classList.add('recording-pulse');
 
         recordTimerInterval = setInterval(() => {
@@ -128,7 +157,7 @@ function stopRecording() {
 
 function togglePlayAudio() {
     if (!profile.audioBase64) {
-        showToast('هنوز ویسی ضبط نکرده‌اید!');
+        showToast('ابتدا ویسی ضبط کنید!');
         return;
     }
 
@@ -145,36 +174,22 @@ function togglePlayAudio() {
     }
 }
 
-function renderInterestsSelector() {
-    const container = document.getElementById('interests-selector');
-    if (!container) return;
-
-    container.innerHTML = ALL_INTERESTS.map(tag => {
-        const isSelected = tempInterests.includes(tag);
-        return `
-            <span data-tag="${tag}" class="interest-chip text-[10px] px-2 py-1 rounded-full border border-white/10 ${isSelected ? 'selected' : 'bg-white/5 text-gray-300'}">
-                ${tag}
-            </span>
-        `;
-    }).join('');
-
-    container.querySelectorAll('.interest-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            const tag = chip.getAttribute('data-tag');
-            if (tempInterests.includes(tag)) {
-                tempInterests = tempInterests.filter(t => t !== tag);
-            } else {
-                if (tempInterests.length >= 3) {
-                    showToast('حداکثر ۳ مورد قابل انتخاب است!');
-                    return;
-                }
-                tempInterests.push(tag);
-            }
-            renderInterestsSelector();
-        });
-    });
+// جدید: تابع حذف ویس
+function deleteVoice() {
+    if (profile.audioBase64) {
+        if (confirm('آیا مطمئن هستید که می‌خواهید ویس خود را حذف کنید؟')) {
+            if (audioInstance && !audioInstance.paused) audioInstance.pause();
+            profile.audioBase64 = null;
+            saveProfile();
+            renderUI();
+            showToast('ویس شما حذف شد 🗑️');
+        }
+    }
 }
 
+// ==========================================
+// مدیریت مودال‌ها و تب‌ها
+// ==========================================
 function switchTab(tabName) {
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
     document.getElementById(`tab-${tabName}`)?.classList.add('active');
@@ -198,15 +213,24 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
+// ==========================================
+// Initialization
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     renderUI();
 
+    // تنظیم لینک کانال
+    const channelBtn = document.getElementById('btn-telegram-channel');
+    if (channelBtn) channelBtn.href = TELEGRAM_CHANNEL_URL;
+
+    // ناوبری
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
 
     document.getElementById('btn-back-header')?.addEventListener('click', () => switchTab('explore'));
 
+    // آپلود عکس
     document.getElementById('direct-avatar-upload')?.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -221,39 +245,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ویس
     document.getElementById('btn-record-voice')?.addEventListener('click', () => {
         if (mediaRecorder && mediaRecorder.state === 'recording') stopRecording();
         else startRecording();
     });
-
     document.getElementById('btn-play-voice')?.addEventListener('click', togglePlayAudio);
     document.getElementById('btn-card-play-voice')?.addEventListener('click', togglePlayAudio);
+    
+    // جدید: کلیک روی دکمه حذف ویس
+    document.getElementById('btn-delete-voice')?.addEventListener('click', deleteVoice);
 
-    const bioInput = document.getElementById('input-edit-bio');
-    bioInput?.addEventListener('input', (e) => {
+    // مودال VIP
+    const vipModal = document.getElementById('vip-modal');
+    const openVipBtns = ['btn-open-vip-modal', 'btn-buy-vip-header'];
+    
+    openVipBtns.forEach(id => {
+        document.getElementById(id)?.addEventListener('click', () => vipModal.classList.remove('hidden'));
+    });
+    
+    document.getElementById('btn-close-vip-modal')?.addEventListener('click', () => vipModal.classList.add('hidden'));
+
+    // ویرایش پروفایل
+    document.getElementById('input-edit-bio')?.addEventListener('input', e => {
         document.getElementById('bio-char-count').innerText = `${e.target.value.length}/100`;
     });
 
     document.getElementById('btn-open-edit-modal')?.addEventListener('click', () => {
         const ageSelect = document.getElementById('input-edit-age');
         const citySelect = document.getElementById('input-edit-city');
-
         if (ageSelect.options.length === 0) {
             for (let i = 18; i <= 60; i++) ageSelect.innerHTML += `<option value="${i}">${i}</option>`;
         }
         if (citySelect.options.length === 0) {
             IRAN_CITIES.forEach(c => citySelect.innerHTML += `<option value="${c}">${c}</option>`);
         }
-
         document.getElementById('input-edit-name').value = profile.name;
         document.getElementById('input-edit-age').value = profile.age;
         document.getElementById('input-edit-gender').value = profile.gender || 'زن';
         document.getElementById('input-edit-city').value = profile.city;
         document.getElementById('input-edit-bio').value = profile.bio || '';
         document.getElementById('bio-char-count').innerText = `${(profile.bio || '').length}/100`;
-
         tempInterests = [...profile.interests];
-        renderInterestsSelector();
+        
+        // رندر انتخاب علاقه‌مندی‌ها (لیست کامل)
+        const container = document.getElementById('interests-selector');
+        container.innerHTML = ALL_INTERESTS.map(tag => {
+            const isSelected = tempInterests.includes(tag);
+            return `<span data-tag="${tag}" class="interest-chip text-[10px] px-2 py-1 rounded-full border border-white/10 ${isSelected ? 'selected' : 'bg-white/5 text-gray-300'}">${tag}</span>`;
+        }).join('');
+        container.querySelectorAll('.interest-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const tag = chip.getAttribute('data-tag');
+                if (tempInterests.includes(tag)) tempInterests = tempInterests.filter(t => t !== tag);
+                else {
+                    if (tempInterests.length >= 3) { showToast('حداکثر ۳ مورد!'); return; }
+                    tempInterests.push(tag);
+                }
+                chip.classList.toggle('selected');
+                chip.classList.toggle('bg-white/5');
+                chip.classList.toggle('text-gray-300');
+            });
+        });
 
         document.getElementById('edit-profile-modal').classList.remove('hidden');
     });
@@ -269,10 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
         profile.city = document.getElementById('input-edit-city').value;
         profile.bio = document.getElementById('input-edit-bio').value;
         profile.interests = [...tempInterests];
-
         saveProfile();
         renderUI();
         document.getElementById('edit-profile-modal').classList.add('hidden');
-        showToast('تغییرات به شکل دائمی ذخیره شدند ✨');
+        showToast('تغییرات با موفقیت ذخیره شد ✨');
     });
 });
