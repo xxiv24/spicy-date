@@ -4,7 +4,21 @@
 
 const API_BASE_URL = 'https://spicy-date-api.onrender.com';
 
-// ۱. احراز هویت با تلگرام
+// لیست ۱۰ تایی علاقه مندی های استاندارد
+const ALL_INTERESTS = [
+    "☕ کافه‌گردی",
+    "🎮 گیمینگ",
+    "🎧 موسیقی",
+    "✈️ سفر",
+    "🏋️ ورزش",
+    "📸 عکاسی",
+    "🍕 آشپزی",
+    "🎬 فیلم و سریال",
+    "📚 کتابخوانی",
+    "🎨 هنر و طراحی"
+];
+
+// احراز هویت با تلگرام
 async function authenticateUser() {
     if (!window.Telegram?.WebApp?.initData) return;
 
@@ -18,7 +32,6 @@ async function authenticateUser() {
         const data = await response.json();
         if (data.success) {
             localStorage.setItem('spicy_token', data.token);
-            console.log("ورود موفقیت‌آمیز کاربر:", data.user);
             loadUserProfile();
         }
     } catch (err) {
@@ -31,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// ۲. تنظیمات Telegram SDK
+// Telegram SDK
 // ==========================================
 const tg = window.Telegram?.WebApp;
 
@@ -45,7 +58,6 @@ if (tg) {
     }
 }
 
-// تابع ایجاد بازخورد لمسی (Haptic Feedback)
 function triggerHaptic(type = 'light') {
     if (tg?.HapticFeedback) {
         if (type === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
@@ -57,7 +69,7 @@ function triggerHaptic(type = 'light') {
 }
 
 // ==========================================
-// ۳. داده‌های نمونه (Mock Data) اکسپلور
+// داده‌های نمونه اکسپلور
 // ==========================================
 const mockUsers = [
     {
@@ -92,7 +104,7 @@ const mockUsers = [
 let profilesList = [];
 let currentUserIndex = 0;
 
-// داده‌های پروفایل کاربر متصل (کاربر جاری)
+// داده‌های پروفایل کاربر متصل
 let myProfileData = {
     name: tg?.initDataUnsafe?.user?.first_name || "کاربر اسپایسی",
     age: 24,
@@ -103,15 +115,13 @@ let myProfileData = {
     interests: ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"],
     likesReceived: 12,
     matches: 4,
-    superLikes: 2,
-    filters: {
-        gender: "all",
-        minAge: 18,
-        maxAge: 35
-    }
+    superLikes: 2
 };
 
-// دریافت لیست کاربران اکسپلور
+let tempSelectedInterests = [...myProfileData.interests];
+let tempAvatarBase64 = null;
+
+// دریافت پروفایل‌های اکسپلور
 async function fetchProfiles() {
     const token = localStorage.getItem('spicy_token');
     if (token) {
@@ -135,7 +145,6 @@ async function fetchProfiles() {
     renderCard();
 }
 
-// ثبت اکشن لایک/رد/سوپرلایک
 async function sendActionToAPI(targetUserId, actionType) {
     const token = localStorage.getItem('spicy_token');
     if (!token) return;
@@ -155,10 +164,8 @@ async function sendActionToAPI(targetUserId, actionType) {
 }
 
 // ==========================================
-// ۴. سیستم مدیریت کامل پروفایل کاربر
+// مدیریت پروفایل کاربر
 // ==========================================
-
-// دریافت اطلاعات کامل پروفایل از API
 async function loadUserProfile() {
     const token = localStorage.getItem('spicy_token');
     if (token) {
@@ -177,7 +184,6 @@ async function loadUserProfile() {
     renderProfileUI();
 }
 
-// رندر کامل صفحه پروفایل
 function renderProfileUI() {
     const profileImg = document.getElementById('profile-img');
     const profileName = document.getElementById('profile-name');
@@ -186,7 +192,6 @@ function renderProfileUI() {
     const profileVipBadge = document.getElementById('profile-vip-badge');
     const profileInterests = document.getElementById('profile-interests');
 
-    // آمار پروفایل
     const statLikes = document.getElementById('stat-likes');
     const statMatches = document.getElementById('stat-matches');
     const statSuperlikes = document.getElementById('stat-superlikes');
@@ -203,10 +208,10 @@ function renderProfileUI() {
     if (profileVipBadge) {
         if (myProfileData.isVip) {
             profileVipBadge.innerText = 'اشتراک VIP 👑';
-            profileVipBadge.classList.remove('bg-gray-700', 'text-gray-300');
-            profileVipBadge.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-yellow-300', 'text-black', 'font-bold');
+            profileVipBadge.className = 'inline-block text-[10px] bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-bold px-3 py-1 rounded-full';
         } else {
             profileVipBadge.innerText = 'اشتراک معمولی';
+            profileVipBadge.className = 'inline-block text-[10px] bg-gray-800 text-gray-300 px-3 py-1 rounded-full border border-white/10';
         }
     }
 
@@ -217,12 +222,81 @@ function renderProfileUI() {
     }
 }
 
-// ذخیره فرم ویرایش پروفایل
-async function saveUserProfile(updatedData) {
-    myProfileData = { ...myProfileData, ...updatedData };
-    renderProfileUI();
-    showToast('پروفایل با موفقیت بروزرسانی شد! ✨', '✅');
+// آماده‌سازی مودال ویرایش پروفایل
+function setupEditProfileModal() {
+    const editNameInput = document.getElementById('input-edit-name');
+    const editBioInput = document.getElementById('input-edit-bio');
+    const editPreviewImg = document.getElementById('edit-preview-img');
+    const charCountEl = document.getElementById('bio-char-count');
 
+    if (editNameInput) editNameInput.value = myProfileData.name;
+    if (editBioInput) {
+        editBioInput.value = myProfileData.bio || '';
+        if (charCountEl) charCountEl.innerText = `${editBioInput.value.length}/100`;
+    }
+    if (editPreviewImg) editPreviewImg.src = myProfileData.image;
+
+    tempSelectedInterests = [...myProfileData.interests];
+    renderInterestsSelector();
+}
+
+// رندر انتخابی تگ‌های علاقه مندی (حداکثر ۳ تایی)
+function renderInterestsSelector() {
+    const container = document.getElementById('interests-selector');
+    if (!container) return;
+
+    container.innerHTML = ALL_INTERESTS.map(tag => {
+        const isSelected = tempSelectedInterests.includes(tag);
+        return `
+            <span data-tag="${tag}" class="interest-chip text-[10px] px-2.5 py-1 rounded-full border border-white/10 ${isSelected ? 'selected' : 'bg-white/5 text-gray-300'}">
+                ${tag}
+            </span>
+        `;
+    }).join('');
+
+    // رویداد کلیک روی تگ‌ها
+    container.querySelectorAll('.interest-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const tag = chip.getAttribute('data-tag');
+            if (tempSelectedInterests.includes(tag)) {
+                tempSelectedInterests = tempSelectedInterests.filter(t => t !== tag);
+            } else {
+                if (tempSelectedInterests.length >= 3) {
+                    triggerHaptic('error');
+                    showToast('حداکثر ۳ علاقه‌مندی قابل انتخاب است!', '⚠️');
+                    return;
+                }
+                tempSelectedInterests.push(tag);
+            }
+            triggerHaptic('light');
+            renderInterestsSelector();
+        });
+    });
+}
+
+// ذخیره‌سازی فرم ویرایش پروفایل
+async function saveUserProfile() {
+    const nameInput = document.getElementById('input-edit-name')?.value;
+    const bioInput = document.getElementById('input-edit-bio')?.value;
+
+    if (!nameInput || nameInput.trim() === '') {
+        showToast('لطفاً نام خود را وارد کنید.', '⚠️');
+        return;
+    }
+
+    myProfileData.name = nameInput.trim();
+    myProfileData.bio = bioInput ? bioInput.trim() : '';
+    myProfileData.interests = [...tempSelectedInterests];
+
+    if (tempAvatarBase64) {
+        myProfileData.image = tempAvatarBase64;
+    }
+
+    renderProfileUI();
+    document.getElementById('edit-profile-modal')?.classList.add('hidden');
+    showToast('پروفایل با موفقیت ذخیره شد! ✨', '✅');
+
+    // ارسال به API در صورت اتصال
     const token = localStorage.getItem('spicy_token');
     if (!token) return;
 
@@ -233,15 +307,20 @@ async function saveUserProfile(updatedData) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(updatedData)
+            body: JSON.stringify({
+                name: myProfileData.name,
+                bio: myProfileData.bio,
+                interests: myProfileData.interests,
+                image: myProfileData.image
+            })
         });
     } catch (err) {
-        console.error("خطا در ارسال ویرایش پروفایل به سرور:", err);
+        console.error("خطا در به‌روزرسانی پروفایل در سرور:", err);
     }
 }
 
 // ==========================================
-// ۵. مدیریت تب‌ها و ناوبری
+// ناوبری و تب‌ها
 // ==========================================
 function switchTab(tabName) {
     triggerHaptic('light');
@@ -268,7 +347,7 @@ function switchTab(tabName) {
 }
 
 // ==========================================
-// ۶. رندر کارت و سواپ (اکسپلور)
+// کارت‌های اکسپلور
 // ==========================================
 function renderCard() {
     if (!profilesList || profilesList.length === 0) return;
@@ -329,9 +408,7 @@ function nextCard(action) {
     }, 300);
 }
 
-// ==========================================
-// ۷. اعلانات (Toast)
-// ==========================================
+// Toast
 function showToast(message, icon = '🌶️') {
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toast-message');
@@ -349,66 +426,13 @@ function showToast(message, icon = '🌶️') {
 }
 
 // ==========================================
-// ۸. مدیریت بازی دوز
-// ==========================================
-let tttBoard = Array(9).fill(null);
-let tttTurn = '❌';
-
-function initTicTacToe() {
-    const boardEl = document.getElementById('ttt-board');
-    if (!boardEl) return;
-
-    boardEl.innerHTML = '';
-    tttBoard = Array(9).fill(null);
-    tttTurn = '❌';
-    document.getElementById('ttt-status').innerText = `نوبت: ${tttTurn}`;
-
-    for (let i = 0; i < 9; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'tictactoe-cell spicy-card rounded-xl';
-        cell.onclick = () => makeTTTMove(i, cell);
-        boardEl.appendChild(cell);
-    }
-}
-
-function makeTTTMove(index, cellEl) {
-    if (tttBoard[index]) return;
-
-    triggerHaptic('light');
-    tttBoard[index] = tttTurn;
-    cellEl.innerText = tttTurn;
-    cellEl.classList.add('disabled');
-
-    if (checkTTTWinner()) {
-        triggerHaptic('success');
-        document.getElementById('ttt-status').innerText = `برنده: ${tttTurn} 🎉`;
-        return;
-    }
-
-    tttTurn = tttTurn === '❌' ? '⭕' : '❌';
-    document.getElementById('ttt-status').innerText = `نوبت: ${tttTurn}`;
-}
-
-function checkTTTWinner() {
-    const wins = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8],
-        [0, 3, 6], [1, 4, 7], [2, 5, 8],
-        [0, 4, 8], [2, 4, 6]
-    ];
-    return wins.some(combo => {
-        const [a, b, c] = combo;
-        return tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c];
-    });
-}
-
-// ==========================================
-// ۹. مقداردهی اولیه برنامه
+// مقداردهی اولیه برنامه
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
     fetchProfiles();
 
-    // کلیک روی دکمه‌های ناوبری پایینی
+    // کلیک روی تب‌ها
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const tabName = btn.getAttribute('data-tab');
@@ -419,19 +443,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // دکمه‌های کارت اکسپلور
+    // اکسپلور
     document.getElementById('btn-like')?.addEventListener('click', () => nextCard('like'));
     document.getElementById('btn-pass')?.addEventListener('click', () => nextCard('pass'));
     document.getElementById('btn-super')?.addEventListener('click', () => nextCard('super'));
-
-    // دکمه‌های پروفایل
-    document.getElementById('btn-buy-vip')?.addEventListener('click', () => {
-        triggerHaptic('heavy');
-        showToast('انتقال به پرداخت با Telegram Stars... 🌟', '⭐');
+    document.getElementById('btn-card-play-voice')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        showToast('پخش صدای ۱۵ ثانیه‌ای... 🎙️');
     });
 
+    // پروفایل و مودال ویرایش
     document.getElementById('btn-edit-profile')?.addEventListener('click', () => {
         triggerHaptic('medium');
+        setupEditProfileModal();
         document.getElementById('edit-profile-modal')?.classList.remove('hidden');
     });
 
@@ -440,51 +464,72 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-profile-modal')?.classList.add('hidden');
     });
 
-    // ضبط وویس پروفایل
+    document.getElementById('btn-save-edit-profile')?.addEventListener('click', () => {
+        triggerHaptic('success');
+        saveUserProfile();
+    });
+
+    // شمارنده حروف بیوگرافی
+    document.getElementById('input-edit-bio')?.addEventListener('input', (e) => {
+        const charCountEl = document.getElementById('bio-char-count');
+        if (charCountEl) {
+            charCountEl.innerText = `${e.target.value.length}/100`;
+        }
+    });
+
+    // پیش‌نمایش آپلود عکس
+    document.getElementById('input-avatar-file')?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempAvatarBase64 = event.target.result;
+                const previewImg = document.getElementById('edit-preview-img');
+                if (previewImg) previewImg.src = tempAvatarBase64;
+                showToast('پیش‌نمایش عکس بارگذاری شد!', '📸');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // ضبط و شنیدن ویس در پروفایل
+    let isRecording = false;
     document.getElementById('btn-record-voice')?.addEventListener('click', () => {
-        triggerHaptic('medium');
-        showToast('ضبط صدای ۱۵ ثانیه‌ای شروع شد... 🎙️', '🎤');
-    });
-
-    // بازی‌ها
-    document.getElementById('game-tictactoe')?.addEventListener('click', () => {
-        triggerHaptic('medium');
-        initTicTacToe();
-        document.getElementById('tictactoe-modal')?.classList.remove('hidden');
-    });
-
-    document.getElementById('btn-close-tictactoe')?.addEventListener('click', () => {
-        triggerHaptic('light');
-        document.getElementById('tictactoe-modal')?.classList.add('hidden');
-    });
-
-    document.getElementById('btn-reset-ttt')?.addEventListener('click', () => {
-        triggerHaptic('light');
-        initTicTacToe();
-    });
-
-    document.getElementById('game-truth-or-dare')?.addEventListener('click', () => {
-        triggerHaptic('medium');
-        document.getElementById('tod-modal')?.classList.remove('hidden');
-    });
-
-    document.getElementById('btn-close-tod')?.addEventListener('click', () => {
-        triggerHaptic('light');
-        document.getElementById('tod-modal')?.classList.add('hidden');
-    });
-
-    document.getElementById('game-rps')?.addEventListener('click', () => {
-        triggerHaptic('medium');
-        document.getElementById('rps-modal')?.classList.remove('hidden');
-    });
-
-    document.getElementById('btn-close-rps')?.addEventListener('click', () => {
-        triggerHaptic('light');
-        document.getElementById('rps-modal')?.classList.add('hidden');
+        triggerHaptic('heavy');
+        const btn = document.getElementById('btn-record-voice');
+        const timer = document.getElementById('voice-timer');
+        
+        if (!isRecording) {
+            isRecording = true;
+            btn.classList.add('recording-pulse');
+            btn.innerHTML = '<span>⏹️</span> توقف ضبط';
+            showToast('در حال ضبط صدای ۱۵ ثانیه‌ای... 🎙️', '🔴');
+            
+            let sec = 15;
+            const interval = setInterval(() => {
+                sec--;
+                if (timer) timer.innerText = `00:${sec < 10 ? '0' + sec : sec}`;
+                if (sec <= 0 || !isRecording) {
+                    clearInterval(interval);
+                    isRecording = false;
+                    btn.classList.remove('recording-pulse');
+                    btn.innerHTML = '<span>🎙️</span> شروع ضبط';
+                    if (timer) timer.innerText = '00:15';
+                    showToast('ضبط صدا انجام شد! 🎧', '✅');
+                }
+            }, 1000);
+        } else {
+            isRecording = false;
+        }
     });
 
     document.getElementById('btn-play-voice')?.addEventListener('click', () => {
         triggerHaptic('medium');
-        showToast('پخش وویس ۱۵ ثانیه‌ای... 🎧');
+        showToast('پخش صدای ثبت شده... 🎧');
+    });
+
+    document.getElementById('btn-stars-subscribe')?.addEventListener('click', () => {
+        triggerHaptic('heavy');
+        showToast('انتقال به درگاه Telegram Stars... 🌟', '⭐');
     });
 });
