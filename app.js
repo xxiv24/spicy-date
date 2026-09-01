@@ -2,8 +2,9 @@
 // Spicy Date 🌶️ - Complete App Logic
 // ==========================================
 
-const STORAGE_KEY = 'spicy_user_profile_data_v2';
-const TELEGRAM_CHANNEL_URL = 'https://t.me/YOUR_CHANNEL_USERNAME'; // لینک کانال تلگرام شما
+const API_BASE_URL = 'https://spicy-date-api.onrender.com';
+const STORAGE_KEY = 'spicy_user_profile_data_v3';
+const TELEGRAM_CHANNEL_URL = 'https://t.me/SpicyDateApp';
 
 const IRAN_CITIES = [
     "تهران", "مشهد", "اصفهان", "کرج", "شیراز", "تبریز", "قم", "اهواز", 
@@ -34,7 +35,7 @@ function triggerHaptic(type = 'light') {
     }
 }
 
-// بارگذاری پروفایل از Storage
+// بارگذاری پروفایل
 function loadStoredProfile() {
     const defaultData = {
         name: tg?.initDataUnsafe?.user?.first_name || "کاربر اسپایسی",
@@ -62,7 +63,7 @@ function loadStoredProfile() {
 let myProfileData = loadStoredProfile();
 let tempSelectedInterests = [...myProfileData.interests];
 
-// متغیرهای ضبط صدا MediaRecorder
+// متغیرهای ضبط صدا
 let mediaRecorder = null;
 let audioChunks = [];
 let audioInstance = null;
@@ -71,11 +72,27 @@ let recordSecondsLeft = 15;
 
 function saveProfileToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(myProfileData));
+    syncWithServer();
 }
 
-// نمایش اطلاعات هم روی پروفایل هم روی کارت اکسپلور (مخاطبان)
+// ارسال داده به سرور Render
+async function syncWithServer() {
+    try {
+        await fetch(`${API_BASE_URL}/api/users/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                telegramId: tg?.initDataUnsafe?.user?.id || 'demo_user',
+                ...myProfileData
+            })
+        });
+    } catch (e) {
+        console.log("Server sync fallback to local storage");
+    }
+}
+
+// نمایش داده‌ها رو پروفایل و کارت اکسپلور
 function renderProfileUI() {
-    // ۱. به‌روزرسانی بخش پروفایل
     const profileImg = document.getElementById('profile-img');
     const profileNameAge = document.getElementById('profile-name-age');
     const profileBio = document.getElementById('profile-bio');
@@ -91,13 +108,10 @@ function renderProfileUI() {
     if (profileGender) profileGender.innerText = `| ${myProfileData.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
 
     if (profileVipBadge) {
-        if (myProfileData.isVip) {
-            profileVipBadge.innerText = 'اشتراک VIP 👑';
-            profileVipBadge.className = 'inline-block text-[10px] bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-bold px-3 py-1 rounded-full';
-        } else {
-            profileVipBadge.innerText = 'اشتراک معمولی';
-            profileVipBadge.className = 'inline-block text-[10px] bg-gray-800 text-gray-300 px-3 py-1 rounded-full border border-white/10';
-        }
+        profileVipBadge.innerText = myProfileData.isVip ? 'اشتراک VIP 👑' : 'اشتراک معمولی';
+        profileVipBadge.className = myProfileData.isVip 
+            ? 'inline-block text-[10px] bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-bold px-3 py-1 rounded-full'
+            : 'inline-block text-[10px] bg-gray-800 text-gray-300 px-3 py-1 rounded-full border border-white/10';
     }
 
     if (profileInterests && myProfileData.interests) {
@@ -106,7 +120,7 @@ function renderProfileUI() {
         ).join('');
     }
 
-    // ۲. سینک با کارت اکسپلور (مخاطب مقابل)
+    // کارت اکسپلور
     const cardImg = document.getElementById('card-img');
     const cardNameAge = document.getElementById('card-name-age');
     const cardLocation = document.getElementById('card-location');
@@ -126,26 +140,28 @@ function renderProfileUI() {
 }
 
 // ==========================================
-// منطق ضبط و پخش صدا (MediaRecorder)
+// ضبط و پخش صدا (تضمین کارکرد روی آیفون و اندروید)
 // ==========================================
 async function startRecording() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream);
+        
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
 
         mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioBlob = new Blob(audioChunks, { type: mimeType });
             const reader = new FileReader();
             reader.readAsDataURL(audioBlob);
             reader.onloadend = () => {
                 myProfileData.audioBase64 = reader.result;
                 saveProfileToStorage();
-                showToast('ویس با موفقیت ثبت شد! 🎙️', '✅');
+                showToast('ویس با موفقیت ضبط شد! 🎙️', '✅');
             };
         };
 
@@ -156,19 +172,17 @@ async function startRecording() {
         const recordLabel = document.getElementById('record-voice-label');
         const timerEl = document.getElementById('voice-timer');
         
-        btnRecord.classList.add('recording-pulse');
-        recordLabel.innerText = 'توقف ضبط';
+        if (btnRecord) btnRecord.classList.add('recording-pulse');
+        if (recordLabel) recordLabel.innerText = 'توقف ضبط';
 
         recordTimerInterval = setInterval(() => {
             recordSecondsLeft--;
             if (timerEl) timerEl.innerText = `00:${recordSecondsLeft < 10 ? '0' : ''}${recordSecondsLeft}`;
-            if (recordSecondsLeft <= 0) {
-                stopRecording();
-            }
+            if (recordSecondsLeft <= 0) stopRecording();
         }, 1000);
 
     } catch (err) {
-        showToast('دسترسی به میکروفون داده نشد!', '⚠️');
+        showToast('دسترسی به میکروفون باز نیست!', '⚠️');
     }
 }
 
@@ -190,7 +204,7 @@ function stopRecording() {
 
 function togglePlayAudio() {
     if (!myProfileData.audioBase64) {
-        showToast('ابتدا صدا ضبط کنید!', '🎙️');
+        showToast('هنوز ویسی ضبط نشده است!', '🎙️');
         return;
     }
 
@@ -199,12 +213,10 @@ function togglePlayAudio() {
         updatePlayBtnState(false);
     } else {
         audioInstance = new Audio(myProfileData.audioBase64);
-        audioInstance.play();
+        audioInstance.play().catch(() => showToast('خطا در پخش ویس', '⚠️'));
         updatePlayBtnState(true);
 
-        audioInstance.onended = () => {
-            updatePlayBtnState(false);
-        };
+        audioInstance.onended = () => updatePlayBtnState(false);
     }
 }
 
@@ -224,7 +236,130 @@ function updatePlayBtnState(isPlaying) {
     }
 }
 
-// فرم‌ها و Dropdownها
+// ==========================================
+// Swipe لمسی روی کارت اکسپلور
+// ==========================================
+function setupSwipeGesture() {
+    const card = document.getElementById('user-card');
+    if (!card) return;
+
+    let startX = 0, currentX = 0, isDragging = false;
+
+    card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+    });
+
+    card.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentX = e.touches[0].clientX - startX;
+        card.style.transform = `translateX(${currentX}px) rotate(${currentX * 0.05}deg)`;
+    });
+
+    card.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (currentX > 100) {
+            triggerHaptic('success');
+            showToast('لایک شد! ❤️');
+            resetCardPos();
+        } else if (currentX < -100) {
+            triggerHaptic('medium');
+            showToast('رد شد ✖️');
+            resetCardPos();
+        } else {
+            resetCardPos();
+        }
+    });
+
+    function resetCardPos() {
+        card.style.transform = 'translateX(0px) rotate(0deg)';
+    }
+}
+
+// ==========================================
+// مینی‌گیم آنلاین دوز (Tic-Tac-Toe)
+// ==========================================
+let tttBoard = Array(9).fill(null);
+let tttTurn = '❌';
+
+function setupTicTacToe() {
+    const gameCard = document.getElementById('game-tictactoe-card');
+    const boardContainer = document.getElementById('tictactoe-board-container');
+    const cells = document.querySelectorAll('.ttt-cell');
+
+    if (gameCard) {
+        gameCard.addEventListener('click', () => {
+            boardContainer.classList.toggle('hidden');
+            resetTTTBoard();
+        });
+    }
+
+    cells.forEach(cell => {
+        cell.addEventListener('click', () => {
+            const index = cell.getAttribute('data-index');
+            if (!tttBoard[index]) {
+                tttBoard[index] = tttTurn;
+                cell.innerText = tttTurn;
+                triggerHaptic('light');
+
+                if (checkTTTWinner()) {
+                    showToast(`بازیکن ${tttTurn} برنده شد! 🎉`, '🏆');
+                    setTimeout(resetTTTBoard, 1500);
+                } else {
+                    tttTurn = tttTurn === '❌' ? '⭕' : '❌';
+                    document.getElementById('ttt-status').innerText = `نوبت بازیکن (${tttTurn})`;
+                }
+            }
+        });
+    });
+
+    document.getElementById('btn-reset-ttt')?.addEventListener('click', resetTTTBoard);
+}
+
+function checkTTTWinner() {
+    const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+    return winPatterns.some(p => tttBoard[p[0]] && tttBoard[p[0]] === tttBoard[p[1]] && tttBoard[p[0]] === tttBoard[p[2]]);
+}
+
+function resetTTTBoard() {
+    tttBoard = Array(9).fill(null);
+    tttTurn = '❌';
+    document.querySelectorAll('.ttt-cell').forEach(cell => cell.innerText = '');
+    document.getElementById('ttt-status').innerText = 'نوبت شماست (❌)';
+}
+
+// ==========================================
+// سیستم چت آنلاین
+// ==========================================
+function setupChatSystem() {
+    const sendBtn = document.getElementById('btn-send-chat');
+    const inputMsg = document.getElementById('input-chat-msg');
+    const list = document.getElementById('chat-messages-list');
+
+    if (sendBtn && inputMsg && list) {
+        sendBtn.addEventListener('click', () => {
+            const txt = inputMsg.value.trim();
+            if (txt) {
+                const msgElem = document.createElement('div');
+                msgElem.className = 'spicy-card p-2.5 rounded-2xl border border-red-500/30 bg-red-950/20 text-left mr-auto max-w-[80%]';
+                msgElem.innerHTML = `<p class="text-xs text-white">${txt}</p>`;
+                list.appendChild(msgElem);
+                inputMsg.value = '';
+                triggerHaptic('light');
+            }
+        });
+    }
+}
+
+// ==========================================
+// سایر فرم‌ها
+// ==========================================
 function populateDropdowns() {
     const ageSelect = document.getElementById('input-edit-age');
     const citySelect = document.getElementById('input-edit-city');
@@ -256,17 +391,12 @@ function setupEditProfileModal() {
     const genderSelect = document.getElementById('input-edit-gender');
     const citySelect = document.getElementById('input-edit-city');
     const bioInput = document.getElementById('input-edit-bio');
-    const charCountEl = document.getElementById('bio-char-count');
 
     if (nameInput) nameInput.value = myProfileData.name;
     if (ageSelect) ageSelect.value = myProfileData.age;
     if (genderSelect) genderSelect.value = myProfileData.gender || 'زن';
     if (citySelect) citySelect.value = myProfileData.city;
-    
-    if (bioInput) {
-        bioInput.value = myProfileData.bio || '';
-        if (charCountEl) charCountEl.innerText = `${bioInput.value.length}/100`;
-    }
+    if (bioInput) bioInput.value = myProfileData.bio || '';
 
     tempSelectedInterests = [...myProfileData.interests];
     renderInterestsSelector();
@@ -333,14 +463,10 @@ function saveUserProfile() {
 function switchTab(tabName) {
     triggerHaptic('light');
 
-    const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`)?.classList.add('active');
 
-    const targetTab = document.getElementById(`tab-${tabName}`);
-    if (targetTab) targetTab.classList.add('active');
-
-    const navBtns = document.querySelectorAll('.nav-btn');
-    navBtns.forEach(btn => {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('text-red-500', 'active');
         btn.classList.add('text-gray-400');
     });
@@ -362,20 +488,19 @@ function showToast(message, icon = '🌶️') {
         if (toastIcon) toastIcon.innerText = icon;
 
         toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2500);
+        setTimeout(() => toast.classList.remove('show'), 2500);
     }
 }
 
 // ==========================================
-// Event Listeners
+// Initialization
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-
     renderProfileUI();
+    setupSwipeGesture();
+    setupTicTacToe();
+    setupChatSystem();
 
-    // تنظیم لینک کانال تلگرام
     const chanLink = document.getElementById('btn-telegram-channel');
     if (chanLink) chanLink.href = TELEGRAM_CHANNEL_URL;
 
@@ -415,14 +540,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // کلیک روی دکمه‌های ضبط و پخش ویس
     document.getElementById('btn-record-voice')?.addEventListener('click', () => {
         triggerHaptic('heavy');
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            stopRecording();
-        } else {
-            startRecording();
-        }
+        if (mediaRecorder && mediaRecorder.state === 'recording') stopRecording();
+        else startRecording();
     });
 
     document.getElementById('btn-play-voice')?.addEventListener('click', () => {
