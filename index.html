@@ -22,12 +22,13 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        /* اصلاح حالت نمایش تب‌ها */
+        /* مدیریت نمایش تب‌ها */
         .tab-content {
-            display: none !important;
+            display: none;
+            width: 100%;
         }
         .tab-content.active {
-            display: flex !important;
+            display: flex;
             flex-direction: column;
         }
 
@@ -55,11 +56,6 @@
             transform: translateY(0);
             opacity: 1;
         }
-        .tag-chip.selected {
-            background-color: #ef4444;
-            color: #ffffff;
-            border-color: #ef4444;
-        }
         .tictactoe-cell {
             display: flex;
             align-items: center;
@@ -83,174 +79,131 @@
 </head>
 <body class="h-screen flex flex-col justify-between p-3 max-w-md mx-auto relative overflow-hidden">
 
-    <!-- سیستم اعلانات (Toast) -->
     <div id="toast" class="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between p-3 rounded-2xl spicy-card border-red-500/30 text-xs shadow-lg">
         <span id="toast-message" class="font-medium text-white">پیام نمونه</span>
         <span id="toast-icon" class="text-base">🌶️</span>
     </div>
 
-    <!-- لودینگ صفحات -->
-    <div id="page-loader" class="fixed inset-0 z-50 bg-[#0f0c20]/80 backdrop-blur-md hidden items-center justify-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-    </div>
+    <header class="flex justify-between items-center py-2 px-1 z-20">
+        <span class="font-black text-base text-red-500 flex items-center gap-1">🌶️ Spicy Date</span>
+        <button id="btn-upgrade-vip" class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full font-bold">VIP ⭐️</button>
+    </header>
 
-    <!-- 1. صفحه ورود -->
-    <div id="login-screen" class="fixed inset-0 z-40 bg-[#0f0c20] flex flex-col items-center justify-center p-6 text-center space-y-6">
-        <div class="text-6xl animate-bounce">🌶️</div>
-        <div>
-            <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-500">Spicy Date</h1>
-            <p class="text-xs text-gray-400 mt-1">قرار ملاقات‌های هیجان‌انگیز تلگرامی</p>
-        </div>
-        <button id="btn-telegram-login" class="w-full py-3 bg-gradient-to-r from-red-600 to-pink-600 rounded-2xl font-bold text-sm shadow-lg shadow-red-500/30 active:scale-95 transition">
-            ورود با تلگرام ⚡
-        </button>
-        <button id="btn-open-register" class="text-xs text-gray-400 underline">ثبت‌نام دستی / ویرایش پروفایل</button>
-    </div>
+    <main class="flex-1 overflow-y-auto pb-20 w-full relative">
 
-    <!-- 2. محتوای اصلی برنامه (تب‌ها) -->
-    <main class="flex-1 overflow-y-auto pb-20 w-full">
-
-        <!-- تب ۱: اکسپلور / کارت‌ها -->
         <section id="tab-explore" class="tab-content active h-full justify-between space-y-3">
-            <div class="flex justify-between items-center py-1">
-                <span class="font-black text-base text-red-500">Spicy Date 🌶️</span>
-                <button id="btn-upgrade-vip" class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full font-bold">VIP ⭐️</button>
-            </div>
-
-            <!-- کارت کاربر -->
-            <div id="user-card" class="relative flex-1 rounded-3xl overflow-hidden spicy-card flex flex-col justify-end p-4 min-h-[360px] fade-in">
+            <div id="user-card" class="relative flex-1 rounded-3xl overflow-hidden spicy-card flex flex-col justify-end p-4 min-h-[380px] fade-in mt-1">
                 <img id="card-img" src="" class="absolute inset-0 w-full h-full object-cover -z-10">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#0f0c20] via-transparent to-transparent -z-10"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0f0c20] via-black/20 to-transparent -z-10"></div>
                 
                 <div class="space-y-2">
                     <div class="flex items-center gap-2">
-                        <h2 id="card-name" class="text-lg font-bold text-white">...</h2>
+                        <h2 id="card-name" class="text-xl font-bold text-white">...</h2>
                         <span id="vip-badge" class="hidden text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-bold">VIP</span>
                     </div>
                     <p id="card-location" class="text-xs text-gray-300">📍 ...</p>
                     <div id="card-interests" class="flex flex-wrap gap-1"></div>
 
-                    <div class="pt-1 flex items-center gap-2">
-                        <button id="btn-play-voice" class="w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-xs text-white">▶</button>
-                        <span class="text-[10px] text-gray-300">ویس ۱۵ ثانیه‌ای (Spicy Voice)</span>
+                    <div class="pt-2 flex items-center gap-2">
+                        <button id="btn-play-voice" class="w-9 h-9 rounded-full bg-red-500 flex items-center justify-center text-xs text-white shadow-lg active:scale-95">▶</button>
+                        <span class="text-[11px] text-gray-200 font-medium">ویس ۱۵ ثانیه‌ای (Spicy Voice)</span>
                     </div>
                 </div>
             </div>
 
-            <!-- اکشن‌ها -->
-            <div class="flex items-center justify-around py-2">
-                <button id="btn-pass" class="w-12 h-12 rounded-full spicy-card border-gray-500/30 text-lg flex items-center justify-center active:scale-95">❌</button>
-                <button id="btn-super" class="w-10 h-10 rounded-full spicy-card border-amber-500/30 text-amber-400 text-sm flex items-center justify-center active:scale-95">⭐</button>
-                <button id="btn-like" class="w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 to-pink-500 text-xl flex items-center justify-center shadow-lg shadow-red-500/40 active:scale-95">🌶️</button>
+            <div class="flex items-center justify-around py-3">
                 <button id="btn-game" class="w-10 h-10 rounded-full spicy-card border-purple-500/30 text-purple-400 text-sm flex items-center justify-center active:scale-95">🎮</button>
+                <button id="btn-like" class="w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 to-pink-500 text-xl flex items-center justify-center shadow-lg shadow-red-500/40 active:scale-95">🌶️</button>
+                <button id="btn-super" class="w-10 h-10 rounded-full spicy-card border-amber-500/30 text-amber-400 text-sm flex items-center justify-center active:scale-95">⭐</button>
+                <button id="btn-pass" class="w-12 h-12 rounded-full spicy-card border-gray-500/30 text-lg flex items-center justify-center active:scale-95">❌</button>
             </div>
         </section>
 
-        <!-- تب ۲: بازی‌ها -->
-        <section id="tab-games" class="tab-content space-y-3">
+        <section id="tab-games" class="tab-content space-y-3 pt-2">
             <h2 class="font-bold text-sm text-gray-200 py-1">مینی‌گیم‌های دو نفره 🎮</h2>
             <div class="grid grid-cols-2 gap-2">
-                <div id="game-truth-or-dare" class="spicy-card p-3 rounded-2xl cursor-pointer space-y-1 hover:border-red-500/50 transition">
-                    <span class="text-xl">🔥</span>
+                <div id="game-truth-or-dare" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-red-500/50 transition">
+                    <span class="text-2xl">🔥</span>
                     <h3 class="font-bold text-xs">جرأت یا حقیقت</h3>
                     <p class="text-[9px] text-gray-400">چت ۱۰ دقیقه‌ای با تایمر معکوس</p>
                 </div>
-                <div id="game-personality" class="spicy-card p-3 rounded-2xl cursor-pointer space-y-1 hover:border-amber-500/50 transition">
-                    <span class="text-xl">🧩</span>
+                <div id="game-personality" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-amber-500/50 transition">
+                    <span class="text-2xl">🧩</span>
                     <h3 class="font-bold text-xs">تست شخصیت</h3>
                     <p class="text-[9px] text-gray-400">سنجش درصد شباهت و تطابق</p>
                 </div>
-                <div id="game-tictactoe" class="spicy-card p-3 rounded-2xl cursor-pointer space-y-1 hover:border-blue-500/50 transition">
-                    <span class="text-xl">❌⭕</span>
+                <div id="game-tictactoe" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-blue-500/50 transition">
+                    <span class="text-2xl">❌⭕</span>
                     <h3 class="font-bold text-xs">دوز نئونی</h3>
                     <p class="text-[9px] text-gray-400">رقابت سریع آنلاین</p>
                 </div>
-                <div id="game-rps" class="spicy-card p-3 rounded-2xl cursor-pointer space-y-1 hover:border-green-500/50 transition">
-                    <span class="text-xl">✂️</span>
+                <div id="game-rps" class="spicy-card p-4 rounded-2xl cursor-pointer space-y-1 hover:border-green-500/50 transition">
+                    <span class="text-2xl">✂️</span>
                     <h3 class="font-bold text-xs">سنگ کاغذ قیچی</h3>
                     <p class="text-[9px] text-gray-400">چالش بهترین از ۳ دور</p>
                 </div>
             </div>
 
-            <div id="btn-night-chat" class="spicy-card p-4 rounded-2xl border-amber-500/30 flex items-center justify-between cursor-pointer mt-4">
+            <div id="btn-night-chat" class="spicy-card p-4 rounded-2xl border-amber-500/30 flex items-center justify-between cursor-pointer mt-3">
                 <div>
                     <h3 class="font-bold text-xs text-amber-400">چت ماسک شبانه 🎭 (VIP)</h3>
                     <p class="text-[9px] text-gray-400">گفتگوی ناشناس ساعت ۲۲ الی ۲ بامداد</p>
                 </div>
-                <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded-lg">ورود</span>
+                <span class="text-xs bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-xl font-bold">ورود</span>
             </div>
         </section>
 
-        <!-- تب ۳: گفت‌وگوها -->
-        <section id="tab-chats" class="tab-content space-y-3">
+        <section id="tab-chats" class="tab-content space-y-3 pt-2">
             <h2 class="font-bold text-sm text-gray-200 py-1">مسابقه‌ها و گفت‌وگوها 💬</h2>
-            <div id="chats-list" class="space-y-2"></div>
+            <div id="chats-list" class="space-y-2">
+                <div class="spicy-card p-3 rounded-2xl flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center font-bold">🌶️</div>
+                    <div>
+                        <h4 class="text-xs font-bold">تیم پشتیبانی Spicy Date</h4>
+                        <p class="text-[10px] text-gray-400">به مینی‌اپ خوش آمدید!</p>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <!-- تب ۴: پروفایل -->
-        <section id="tab-profile" class="tab-content space-y-4">
-            <div class="spicy-card p-4 rounded-2xl text-center space-y-2 mt-2">
-                <div class="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 mx-auto flex items-center justify-center text-2xl">👤</div>
-                <h2 id="prof-name" class="font-bold text-sm">نام کاربر</h2>
-                <p id="prof-info" class="text-xs text-gray-400">📍 شهر</p>
-                <span id="vip-status" class="inline-block text-[10px] bg-white/10 text-gray-300 px-2 py-0.5 rounded-full">حساب معمولی</span>
+        <section id="tab-profile" class="tab-content space-y-4 pt-2">
+            <div class="spicy-card p-5 rounded-3xl text-center space-y-3">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-red-500 to-purple-600 border-2 border-white/20 mx-auto flex items-center justify-center text-3xl shadow-lg">👤</div>
+                <div>
+                    <h2 id="prof-name" class="font-bold text-base">کاربر Spicy</h2>
+                    <p id="prof-info" class="text-xs text-gray-400 mt-0.5">📍 تهران</p>
+                </div>
+                <span id="vip-status" class="inline-block text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-bold">اشتراک معمولی</span>
             </div>
 
-            <div class="space-y-2">
-                <button id="btn-buy-vip" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl font-bold text-xs text-black shadow-lg">
+            <div class="space-y-2 pt-2">
+                <button id="btn-buy-vip" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-2xl font-bold text-xs text-black shadow-lg shadow-amber-500/20 active:scale-95">
                     خرید اشتراک VIP با Telegram Stars ⭐️
                 </button>
-                <button id="btn-logout" class="w-full py-2.5 spicy-card text-red-400 rounded-xl text-xs">خروج از حساب</button>
+                <button id="btn-logout" class="w-full py-3 spicy-card text-red-400 rounded-2xl text-xs font-bold active:scale-95">خروج از حساب</button>
             </div>
         </section>
 
     </main>
 
-    <!-- نوار ناوبری پایینی -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-[#0f0c20] border-t border-white/10 px-6 py-2 flex justify-between items-center max-w-md mx-auto z-30">
-        <button class="nav-btn active text-red-500 flex flex-col items-center gap-0.5" data-tab="explore">
-            <span class="text-base">🌶️</span>
-            <span class="text-[9px]">اکسپلور</span>
+    <nav class="fixed bottom-0 left-0 right-0 bg-[#0f0c20]/95 backdrop-blur-md border-t border-white/10 px-6 py-2.5 flex justify-between items-center max-w-md mx-auto z-40">
+        <button class="nav-btn active text-red-500 flex flex-col items-center gap-1" data-tab="explore">
+            <span class="text-lg">🌶️</span>
+            <span class="text-[9px] font-bold">اکسپلور</span>
         </button>
-        <button class="nav-btn text-gray-400 flex flex-col items-center gap-0.5" data-tab="games">
-            <span class="text-base">🎮</span>
-            <span class="text-[9px]">بازی‌ها</span>
+        <button class="nav-btn text-gray-400 flex flex-col items-center gap-1" data-tab="games">
+            <span class="text-lg">🎮</span>
+            <span class="text-[9px] font-bold">بازی‌ها</span>
         </button>
-        <button class="nav-btn text-gray-400 flex flex-col items-center gap-0.5" data-tab="chats">
-            <span class="text-base">💬</span>
-            <span class="text-[9px]">چت‌ها</span>
+        <button class="nav-btn text-gray-400 flex flex-col items-center gap-1" data-tab="chats">
+            <span class="text-lg">💬</span>
+            <span class="text-[9px] font-bold">چت‌ها</span>
         </button>
-        <button class="nav-btn text-gray-400 flex flex-col items-center gap-0.5" data-tab="profile">
-            <span class="text-base">👤</span>
-            <span class="text-[9px]">پروفایل</span>
+        <button class="nav-btn text-gray-400 flex flex-col items-center gap-1" data-tab="profile">
+            <span class="text-lg">👤</span>
+            <span class="text-[9px] font-bold">پروفایل</span>
         </button>
     </nav>
-
-    <!-- مودال‌ها -->
-    <div id="register-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="spicy-card w-full p-4 rounded-3xl space-y-3 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-xs">ویرایش پروفایل ✏️</h3>
-                <button id="btn-close-register" class="text-gray-400 text-sm">✕</button>
-            </div>
-            <input id="reg-name" type="text" placeholder="نام" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-xs text-white outline-none">
-            <input id="reg-age" type="number" placeholder="سن" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-xs text-white outline-none">
-            <input id="reg-city" type="text" placeholder="شهر" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-xs text-white outline-none">
-
-            <div>
-                <p class="text-[10px] text-gray-400 mb-1">انتخاب ۳ علاقه‌مندی:</p>
-                <div class="flex flex-wrap gap-1">
-                    <span class="tag-chip text-[10px] spicy-card px-2 py-1 rounded-full cursor-pointer">☕ کافه‌گردی</span>
-                    <span class="tag-chip text-[10px] spicy-card px-2 py-1 rounded-full cursor-pointer">🎧 موسیقی</span>
-                    <span class="tag-chip text-[10px] spicy-card px-2 py-1 rounded-full cursor-pointer">🎮 گیمینگ</span>
-                    <span class="tag-chip text-[10px] spicy-card px-2 py-1 rounded-full cursor-pointer">✈️ سفر</span>
-                    <span class="tag-chip text-[10px] spicy-card px-2 py-1 rounded-full cursor-pointer">🍕 آشپزی</span>
-                </div>
-            </div>
-
-            <button id="btn-save-profile" class="w-full py-2.5 bg-red-500 rounded-xl font-bold text-xs">ذخیره اطلاعات</button>
-        </div>
-    </div>
 
     <div id="tod-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="spicy-card w-full p-4 rounded-3xl space-y-3">
@@ -276,7 +229,7 @@
             </div>
             <p id="ttt-status" class="text-xs text-amber-400">نوبت: ❌</p>
             <div id="ttt-board" class="grid grid-cols-3 gap-2"></div>
-            <button id="btn-reset-ttt" class="w-full py-1.5 spicy-card text-xs rounded-xl">شروع مجدد</button>
+            <button id="btn-reset-ttt" class="w-full py-2 spicy-card text-xs rounded-xl font-bold">شروع مجدد</button>
         </div>
     </div>
 
@@ -296,7 +249,6 @@
         </div>
     </div>
 
-    <!-- اسکریپت اصلی -->
     <script src="app.js" defer></script>
 </body>
 </html>
