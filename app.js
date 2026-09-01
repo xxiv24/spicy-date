@@ -1,331 +1,310 @@
-# ⚡ Quick Start - شروع سریع
-
-## 🚀 شروع در ۵ دقیقه
-
-### گام 1️⃣: نصب
-```bash
-npm install
-```
-
-### گام 2️⃣: Backend را شروع کنید
-```bash
-npm start
-# یا برای development:
-npm run dev
-```
-
-**Output:**
-```
-╔════════════════════════════════════════╗
-║  🌶️  SPICY DATE BACKEND RUNNING 🌶️    ║
-║  Server: http://localhost:5000         ║
-║  Status: ✅ Ready                       ║
-╚════════════════════════════════════════╝
-```
-
-### گام 3️⃣: Frontend را باز کنید
-```bash
-# Option 1: Direct
-open spicy-date-improved.html
-
-# Option 2: Live Server
-python -m http.server 8000
-# سپس به http://localhost:8000 برید
-```
-
-### گام 4️⃣: تست کنید ✅
-- صفحه بارگذاری شده؟ ✅
-- دکمه "ورود تلگرام" نمایش داده می‌شود؟ ✅
-- می‌توانید پروفایل ایجاد کنید؟ ✅
-
----
-
-## 📱 استفاده از Telegram Web App
-
-### روش 1: Telegram Bot
-```bash
-# Bot Token دریافت کنید (@BotFather)
-# در .env تنظیم کنید:
-TELEGRAM_BOT_TOKEN=your_token_here
-```
-
-### روش 2: Inline Mode
-```
-https://t.me/YourBot/app?startapp=test
-```
-
-### روش 3: Local Testing
-```bash
-# Direct file
-file:///path/to/spicy-date-improved.html
-
-# HTTP Server
-http://localhost:8000/spicy-date-improved.html
-```
-
----
-
-## 🎮 تست سریع بازی‌ها
-
-```javascript
-// Console میں اجرا کنید:
-
-// ۱. Tic-Tac-Toe
-openTicTacToe()
-
-// ۲. Rock-Paper-Scissors
-openRpsGame()
-
-// ۳. Personality Test
-openPersonalityTest()
-
-// ۴. Truth or Dare
-openTruthOrDare()
-```
-
----
-
-## 🔧 تنظیمات دیتابیس
-
-### Option 1: In-Memory (Default)
-صرفاً اجرا کنید - بدون نصب اضافی!
-
-### Option 2: MongoDB
-
-#### با Docker:
-```bash
-docker run -d -p 27017:27017 --name mongo mongo:latest
-```
-
-#### بدون Docker:
-```bash
-# macOS
-brew install mongodb-community
-brew services start mongodb-community
-
-# Ubuntu
-sudo apt-get install -y mongodb
-sudo systemctl start mongodb
-
-# Windows
-choco install mongodb
-```
-
----
-
-## 🌐 API Endpoints (برای تست)
-
-```bash
-# Health Check
-curl http://localhost:5000/api/health
-
-# Create Profile
-curl -X POST http://localhost:5000/api/profile/create \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": 123,
-    "name": "علی",
-    "age": 25,
-    "city": "تهران",
-    "interests": ["🎮 گیمینگ", "☕ کافه‌گردی", "🎧 موسیقی"]
-  }'
-
-# Discover Users
-curl http://localhost:5000/api/users/discover?userId=123
-```
-
----
-
-## 📁 ساختار مجدد
-
-```
-✅ spicy-date-improved.html    ← صفحه اصلی
-✅ app.js                      ← Frontend Logic
-✅ server.js                   ← Backend API
-✅ package.json                ← Dependencies
-✅ README.md                   ← Documentation
-✅ DEPLOYMENT.md              ← Production Guide
-✅ QUICKSTART.md             ← این فایل!
-```
-
----
-
-## 🎨 سفارشی کردن
-
-### تغییر رنگ‌ها
-`spicy-date-improved.html` میں:
-```css
-/* Primary Color */
---primary: #ff3b5c;  /* Red/Pink */
-
-/* Secondary Color */
---secondary: #a855f7;  /* Purple */
-
-/* Background */
---bg: #0f0c20;  /* Dark */
-```
-
-### تغییر نام برنامه
-```html
-<h1>نام جدید 🌶️</h1>
-```
-
-### افزودن بازی جدید
-```javascript
-// app.js میں:
-function openNewGame() {
-    document.getElementById('new-game-modal').classList.remove('hidden');
-    // ... logic
-}
-```
-
----
-
-## 🐛 مشکلات رایج
-
-### ❌ "Cannot POST /api/profile/create"
-**حل**: 
-- Backend فعال است؟ (npm start)
-- Port ۵۰۰۰ صحیح است؟
-
-### ❌ "CORS Error"
-**حل**:
-```javascript
-// server.js میں
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
-```
-
-### ❌ "Microphone permission denied"
-**حل**:
-- استفاده از HTTPS (localhost نیست)
-- Browser permission دهید
-
-### ❌ "localStorage is undefined"
-**حل**:
-- Private mode خاموش کنید
-- Local server استفاده کنید
-
----
-
-## ⚙️ Environment Variables
-
-```bash
-# .env ایجاد کنید
-NODE_ENV=development
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/spicy-date
-TELEGRAM_BOT_TOKEN=your_token
-```
-
----
-
-## 📊 Monitoring
-
-```bash
-# Real-time logs
-npm run dev
-
-# Process status
-pm2 list
-
-# Memory usage
-ps aux | grep node
-
-# Port usage
-lsof -i :5000
-```
-
----
-
-## 🎯 Next Steps
-
-- [ ] Telegram Bot Integration
-- [ ] Database Setup (MongoDB)
-- [ ] User Authentication
-- [ ] WebSocket Chat
-- [ ] Payment Integration
-- [ ] Production Deployment
-
----
-
-## 💡 Tips & Tricks
-
-### Debug Mode
-```javascript
-// Console میں
-window.DEBUG = true;
-
-// Detailed logs
-console.log('🐛 Debug:', state);
-```
-
-### Test Users
-```javascript
-// Fake login
-state.userId = 123;
-state.userProfile = {
-  name: 'Test User',
-  age: 25,
-  city: 'Tehran',
-  interests: ['🎮', '☕', '🎧']
-};
-```
-
-### Database Inspection
-```bash
-# MongoDB
-mongo
-> use spicy-date
-> db.users.find()
-```
-
----
-
-## 📞 صورت شماره (Issues)
-
-**API نتائج نمی‌دهد؟**
-```bash
-# Check server
-curl http://localhost:5000/api/health
-```
-
-**Frontend load نمی‌شود؟**
-```bash
-# Check browser console
-F12 → Console → Check errors
-```
-
-**LocalStorage نکار کار نمی‌کند؟**
-```bash
-# Check privacy settings
-localStorage.setItem('test', '1');
-localStorage.getItem('test');
-```
-
----
-
-## ✨ احتفالات!
-
-🎉 اگر همه چیز کام کرد:
-- [ ] صفحه بارگذاری شده ✅
-- [ ] پروفایل ایجاد شد ✅
-- [ ] بازی‌ها کار می‌کنند ✅
-- [ ] API پاسخ می‌دهد ✅
-
-**آماده برای Production? 🚀**
-
-```bash
-npm install -g pm2
-pm2 start server.js
-pm2 save
-```
-
----
-
-**نسخه**: 1.0.0  
-**حالت**: Ready to use ✅
-
-سوالات? 💬 GitHub Issues یا Email!
+document.addEventListener('DOMContentLoaded', () => {
+    // ۱. مقداردهی اولیه Telegram WebApp SDK
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        if (tg.setHeaderColor) tg.setHeaderColor('#0f0c20');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#0f0c20');
+    }
+
+    let currentUser = null;
+    let currentFeedIndex = 0;
+    let selectedTags = [];
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let activeAudio = null;
+
+    const mockUsers = [
+        {
+            id: 1,
+            name: "سارا",
+            age: 23,
+            city: "تهران",
+            isVip: true,
+            img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600",
+            interests: ["☕ کافه‌گردی", "🎧 موسیقی", "🎬 فیلم و سریال"],
+            voiceUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        },
+        {
+            id: 2,
+            name: "آرش",
+            age: 26,
+            city: "شیراز",
+            isVip: false,
+            img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
+            interests: ["🎮 گیمینگ", "⚽ ورزش", "💻 تکنولوژی"],
+            voiceUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+        }
+    ];
+
+    // سیستم نمایش توست
+    function showToast(message, icon = '🌶️') {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+
+        if (!toast || !toastMsg || !toastIcon) return;
+
+        toastMsg.textContent = message;
+        toastIcon.textContent = icon;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function toggleLoader(show) {
+        const loader = document.getElementById('page-loader');
+        if (!loader) return;
+        if (show) {
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+        } else {
+            loader.classList.add('hidden');
+            loader.classList.remove('flex');
+        }
+    }
+
+    // تغییر تب‌ها
+    function switchTab(targetTab) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.id === `tab-${targetTab}`) tab.classList.add('active');
+        });
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            if (btn.dataset.tab === targetTab) {
+                btn.classList.add('active', 'text-red-500');
+                btn.classList.remove('text-gray-400');
+            } else {
+                btn.classList.remove('active', 'text-red-500');
+                btn.classList.add('text-gray-400');
+            }
+        });
+    }
+
+    // بررسی ورود قبلی
+    const savedProfile = localStorage.getItem('spicy_user_profile');
+    if (savedProfile) {
+        try {
+            currentUser = JSON.parse(savedProfile);
+            document.getElementById('login-screen')?.classList.add('hidden');
+            updateProfileUI();
+            renderFeedCard();
+        } catch (e) {
+            localStorage.removeItem('spicy_user_profile');
+        }
+    }
+
+    // مدیریت جهانی کلیک‌ها (Global Click Handler)
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+        const btn = target.closest('button, .nav-btn, .spicy-card, .tag-chip, .rps-btn');
+        if (!btn) return;
+
+        // دکمه‌های ناوبری
+        if (btn.classList.contains('nav-btn') || btn.dataset.tab) {
+            const tab = btn.dataset.tab || btn.closest('.nav-btn')?.dataset.tab;
+            if (tab) switchTab(tab);
+            return;
+        }
+
+        // ورود با تلگرام
+        if (btn.id === 'btn-telegram-login') {
+            toggleLoader(true);
+            setTimeout(() => {
+                toggleLoader(false);
+                const tgUser = tg?.initDataUnsafe?.user;
+                currentUser = {
+                    name: tgUser?.first_name || 'کاربر تلگرام',
+                    age: 24,
+                    city: 'تهران',
+                    interests: ['☕ کافه‌گردی', '🎧 موسیقی'],
+                    isVip: false
+                };
+                saveAndInitUser();
+                showToast(`خوش آمدی ${currentUser.name}! ⚡`);
+            }, 500);
+            return;
+        }
+
+        // مودال ثبت‌نام
+        if (btn.id === 'btn-open-register') {
+            document.getElementById('register-modal')?.classList.remove('hidden');
+            return;
+        }
+        if (btn.id === 'btn-close-register') {
+            document.getElementById('register-modal')?.classList.add('hidden');
+            return;
+        }
+
+        // انتخاب تگ علاقه‌مندی
+        if (btn.classList.contains('tag-chip')) {
+            const tagText = btn.textContent.trim();
+            if (btn.classList.contains('selected')) {
+                btn.classList.remove('selected');
+                selectedTags = selectedTags.filter(t => t !== tagText);
+            } else {
+                if (selectedTags.length >= 3) {
+                    showToast('حداکثر ۳ علاقه‌مندی می‌توانید انتخاب کنید!', '⚠️');
+                    return;
+                }
+                btn.classList.add('selected');
+                selectedTags.push(tagText);
+            }
+            return;
+        }
+
+        // ذخیره اطلاعات
+        if (btn.id === 'btn-save-profile') {
+            const name = document.getElementById('reg-name')?.value.trim();
+            const age = document.getElementById('reg-age')?.value.trim();
+            const city = document.getElementById('reg-city')?.value.trim();
+
+            if (!name || !age || !city) {
+                showToast('لطفاً همه فیلدها را پر کنید.', '⚠️');
+                return;
+            }
+
+            currentUser = { name, age, city, interests: selectedTags, isVip: currentUser?.isVip || false };
+            saveAndInitUser();
+            document.getElementById('register-modal')?.classList.add('hidden');
+            showToast('پروفایل ذخیره شد! 🔥');
+            return;
+        }
+
+        // اکشن‌های کارت اکسپلور
+        if (btn.id === 'btn-pass') { nextCard(); return; }
+        if (btn.id === 'btn-like') {
+            const user = mockUsers[currentFeedIndex];
+            if (user) showToast(`شما به ${user.name} اسپایسی دادید! 🌶️`);
+            nextCard();
+            return;
+        }
+        if (btn.id === 'btn-super') {
+            const user = mockUsers[currentFeedIndex];
+            if (user) showToast(`سوپر اسپایسی ارسال شد! ⭐`);
+            nextCard();
+            return;
+        }
+        if (btn.id === 'btn-game') { switchTab('games'); return; }
+
+        // باز کردن مینی‌گیم‌ها
+        if (btn.id === 'game-truth-or-dare') { document.getElementById('tod-modal')?.classList.remove('hidden'); return; }
+        if (btn.id === 'btn-close-tod') { document.getElementById('tod-modal')?.classList.add('hidden'); return; }
+        
+        if (btn.id === 'game-tictactoe') { document.getElementById('tictactoe-modal')?.classList.remove('hidden'); resetTTT(); return; }
+        if (btn.id === 'btn-close-tictactoe') { document.getElementById('tictactoe-modal')?.classList.add('hidden'); return; }
+        if (btn.id === 'btn-reset-ttt') { resetTTT(); return; }
+
+        if (btn.id === 'game-rps') { document.getElementById('rps-modal')?.classList.remove('hidden'); return; }
+        if (btn.id === 'btn-close-rps') { document.getElementById('rps-modal')?.classList.add('hidden'); return; }
+
+        // خروج و VIP
+        if (btn.id === 'btn-logout') {
+            localStorage.removeItem('spicy_user_profile');
+            location.reload();
+            return;
+        }
+        if (btn.id === 'btn-buy-vip' || btn.id === 'btn-upgrade-vip') {
+            if (currentUser) currentUser.isVip = true;
+            saveAndInitUser();
+            showToast('اشتراک VIP فعال شد! ⭐');
+            return;
+        }
+    });
+
+    function saveAndInitUser() {
+        localStorage.setItem('spicy_user_profile', JSON.stringify(currentUser));
+        document.getElementById('login-screen')?.classList.add('hidden');
+        updateProfileUI();
+        renderFeedCard();
+    }
+
+    function updateProfileUI() {
+        if (!currentUser) return;
+        const profName = document.getElementById('prof-name');
+        const profInfo = document.getElementById('prof-info');
+        const vipStatus = document.getElementById('vip-status');
+
+        if (profName) profName.textContent = `${currentUser.name}، ${currentUser.age}`;
+        if (profInfo) profInfo.textContent = `📍 ${currentUser.city}`;
+        if (vipStatus && currentUser.isVip) vipStatus.textContent = 'VIP فعال ⭐';
+    }
+
+    function renderFeedCard() {
+        const userCard = document.getElementById('user-card');
+        if (!userCard) return;
+
+        if (currentFeedIndex >= mockUsers.length) {
+            userCard.innerHTML = `<div class="text-center my-auto p-4"><p class="text-xs text-gray-400">کاربر دیگری یافت نشد!</p></div>`;
+            return;
+        }
+
+        const user = mockUsers[currentFeedIndex];
+        const cardImg = document.getElementById('card-img');
+        const cardName = document.getElementById('card-name');
+        const cardLoc = document.getElementById('card-location');
+
+        if (cardImg) cardImg.src = user.img;
+        if (cardName) cardName.textContent = `${user.name}، ${user.age}`;
+        if (cardLoc) cardLoc.textContent = `📍 ${user.city}`;
+    }
+
+    function nextCard() {
+        currentFeedIndex++;
+        renderFeedCard();
+    }
+
+    // منطق بازی دوز
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "❌";
+    let gameActive = true;
+
+    function resetTTT() {
+        board = ["", "", "", "", "", "", "", "", ""];
+        currentPlayer = "❌";
+        gameActive = true;
+        const status = document.getElementById('ttt-status');
+        if (status) status.textContent = `نوبت: ${currentPlayer}`;
+        renderTTTBoard();
+    }
+
+    function renderTTTBoard() {
+        const boardElem = document.getElementById('ttt-board');
+        if (!boardElem) return;
+        boardElem.innerHTML = '';
+        board.forEach((cell, idx) => {
+            const div = document.createElement('div');
+            div.className = `tictactoe-cell spicy-card rounded-xl border border-white/10 ${cell ? 'disabled' : ''}`;
+            div.textContent = cell;
+            div.onclick = () => {
+                if (board[idx] !== "" || !gameActive) return;
+                board[idx] = currentPlayer;
+                checkTTTWinner();
+                if (gameActive) {
+                    currentPlayer = currentPlayer === "❌" ? "⭕" : "❌";
+                    const status = document.getElementById('ttt-status');
+                    if (status) status.textContent = `نوبت: ${currentPlayer}`;
+                }
+                renderTTTBoard();
+            };
+            boardElem.appendChild(div);
+        });
+    }
+
+    function checkTTTWinner() {
+        const winConditions = [
+            [0,1,2], [3,4,5], [6,7,8],
+            [0,3,6], [1,4,7], [2,5,8],
+            [0,4,8], [2,4,6]
+        ];
+        for (let condition of winConditions) {
+            const [a, b, c] = condition;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                gameActive = false;
+                document.getElementById('ttt-status').textContent = `برنده: ${board[a]} 🎉`;
+                return;
+            }
+        }
+    }
+});
