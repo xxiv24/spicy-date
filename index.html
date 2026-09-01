@@ -21,7 +21,8 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* اصلاح کلیدی: مخفی‌سازی کامل تب‌های غیرفعال */
+        
+        /* اصلاح حالت نمایش تب‌ها */
         .tab-content {
             display: none !important;
         }
@@ -29,6 +30,22 @@
             display: flex !important;
             flex-direction: column;
         }
+
+        /* انیمیشن‌های سواپ کارت */
+        .card-swipe-left {
+            animation: swipeLeft 0.3s forwards ease-in-out;
+        }
+        .card-swipe-right {
+            animation: swipeRight 0.3s forwards ease-in-out;
+        }
+
+        @keyframes swipeLeft {
+            to { transform: translateX(-120%) rotate(-15deg); opacity: 0; }
+        }
+        @keyframes swipeRight {
+            to { transform: translateX(120%) rotate(15deg); opacity: 0; }
+        }
+
         #toast {
             transition: all 0.3s ease;
             transform: translateY(100px);
@@ -279,7 +296,7 @@
         </div>
     </div>
 
-    <!-- فراخوانی اسکریپت جاوااسکریپت -->
+    <!-- اسکریپت اصلی -->
     <script src="app.js" defer></script>
 </body>
 </html>
