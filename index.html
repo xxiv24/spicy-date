@@ -46,18 +46,6 @@
             flex-direction: column;
         }
 
-        .card-swipe-right {
-            transform: translateX(120%) rotate(15deg);
-            opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
-        .card-swipe-left {
-            transform: translateX(-120%) rotate(-15deg);
-            opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
         #toast {
             visibility: hidden;
             opacity: 0;
@@ -82,10 +70,10 @@
 
         @keyframes pulse-red {
             0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 0.7; }
         }
         .recording-pulse {
-            animation: pulse-red 1.5s infinite;
+            animation: pulse-red 1s infinite;
         }
     </style>
 </head>
@@ -115,11 +103,11 @@
                     <img id="card-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="User" class="w-full h-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
                     
-                    <span id="vip-badge" class="absolute top-4 right-4 bg-amber-500/80 backdrop-blur-md text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full border border-amber-300">
+                    <span id="card-vip-badge" class="absolute top-4 right-4 bg-amber-500/80 backdrop-blur-md text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full border border-amber-300">
                         👑 VIP
                     </span>
 
-                    <div class="absolute top-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+                    <div id="card-voice-container" class="absolute top-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full flex items-center gap-2">
                         <button id="btn-card-play-voice" class="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white shadow-md active:scale-90 transition">
                             ▶
                         </button>
@@ -129,24 +117,22 @@
                             <span class="w-0.5 h-1.5 bg-red-500 rounded-full"></span>
                             <span class="w-0.5 h-2.5 bg-red-400 rounded-full animate-pulse"></span>
                         </div>
-                        <span class="text-[9px] text-gray-300 font-mono">0:15</span>
+                        <span id="card-voice-timer" class="text-[9px] text-gray-300 font-mono">00:15</span>
                     </div>
 
                     <div class="absolute bottom-4 right-4 left-4 text-white">
                         <div class="flex items-baseline gap-2">
-                            <h2 id="card-name" class="text-2xl font-bold">سارا، ۲۳</h2>
+                            <h2 id="card-name-age" class="text-2xl font-bold">سارا، ۲۳</h2>
                         </div>
-                        <p id="card-location" class="text-xs text-gray-300 mt-1">📍 تهران</p>
+                        <p id="card-location" class="text-xs text-gray-300 mt-1">📍 تهران | ♀️ زن</p>
                         
-                        <div id="card-interests" class="flex flex-wrap gap-1.5 mt-3">
-                            <span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">☕ کافه‌گردی</span>
-                            <span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">🎧 موسیقی</span>
-                        </div>
+                        <div id="card-interests" class="flex flex-wrap gap-1.5 mt-3"></div>
                     </div>
                 </div>
 
                 <div class="p-4 flex items-center justify-evenly gap-4 bg-black/50 border-t border-white/5">
-                    <button id="btn-pass" class="w-14 h-14 bg-gray-800/80 hover:bg-gray-700 text-red-500 rounded-full border border-red-500/30 active:scale-90 transition flex justify-center items-center text-xl shadow-lg shadow-red-500/10">
+                    <!-- تغییر رنگ دکمه رد (ضربدر) به خاکستری دودی/نئونی و حذف قرمز شلوغ -->
+                    <button id="btn-pass" class="w-14 h-14 bg-zinc-900 hover:bg-zinc-800 text-gray-400 hover:text-white rounded-full border border-zinc-700 active:scale-90 transition flex justify-center items-center text-xl shadow-lg shadow-black/40">
                         ✖
                     </button>
                     <button id="btn-super" class="w-12 h-12 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-full border border-amber-500/40 active:scale-90 transition flex justify-center items-center text-lg shadow-lg shadow-amber-500/10">
@@ -194,12 +180,9 @@
         <!-- ==================== TAB 4: PROFILE ==================== -->
         <section id="tab-profile" class="tab-content flex-1 max-w-sm mx-auto w-full space-y-4 overflow-y-auto pb-10">
             
-            <!-- کارت اصلی پروفایل -->
             <div class="spicy-card p-5 rounded-3xl text-center relative border border-white/10 shadow-xl">
-                
                 <div class="relative w-24 h-24 mx-auto mb-3">
                     <img id="profile-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-red-500 shadow-lg shadow-red-500/20">
-                    <!-- مداد که فقط تغییر عکس انجام می‌دهد -->
                     <label for="direct-avatar-upload" class="absolute bottom-0 left-0 bg-red-600 text-white p-2 rounded-full text-xs shadow-md border border-white/20 active:scale-95 transition cursor-pointer">
                         ✏️
                     </label>
@@ -224,7 +207,6 @@
 
                 <div id="profile-interests" class="flex flex-wrap justify-center gap-1.5 mt-3"></div>
 
-                <!-- دکمه ویرایش پروفایل -->
                 <button id="btn-open-edit-modal" class="w-full mt-4 bg-white/10 hover:bg-white/15 text-white py-2.5 rounded-xl text-xs font-semibold border border-white/10 active:scale-98 transition flex justify-center items-center gap-1.5">
                     ⚙️ ویرایش اطلاعات پروفایل
                 </button>
@@ -246,7 +228,7 @@
                 </div>
             </div>
 
-            <!-- ضبط صدای ۱۵ ثانیه‌ای -->
+            <!-- بخش فعال ضبط و پخش ویس -->
             <div class="spicy-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-red-950/20 to-transparent">
                 <div class="flex items-center justify-between mb-3">
                     <div>
@@ -254,23 +236,23 @@
                             <span>صدای اسپایسی من</span>
                             <span class="text-red-500">🎙️</span>
                         </h3>
-                        <p class="text-[10px] text-gray-400 mt-0.5">ضبط ۱۵ ثانیه ویس معرفی هویت</p>
+                        <p id="voice-status-text" class="text-[10px] text-gray-400 mt-0.5">ضبط حداکثر ۱۵ ثانیه ویس</p>
                     </div>
                     <span id="voice-timer" class="text-xs font-mono bg-black/40 text-red-400 px-2.5 py-1 rounded-md border border-red-500/20">00:15</span>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <button id="btn-play-voice" class="flex-1 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition flex justify-center items-center gap-1 border border-white/5">
-                        <span>▶️</span> شنیدن ویس
+                        <span id="play-voice-icon">▶️</span> <span id="play-voice-label">شنیدن ویس</span>
                     </button>
                     <button id="btn-record-voice" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-red-500/20 active:scale-95 transition flex justify-center items-center gap-1">
-                        <span>🎙️</span> شروع ضبط
+                        <span id="record-voice-icon">🎙️</span> <span id="record-voice-label">شروع ضبط</span>
                     </button>
                 </div>
             </div>
 
-            <!-- بنر عضویت کانال تلگرام با لوگوی فلفل 🌶️ -->
-            <a href="https://t.me/SpicyDateApp" target="_blank" class="spicy-card p-3.5 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-between block active:scale-98 transition">
+            <!-- بنر کانال تلگرام متصل به لینک -->
+            <a id="btn-telegram-channel" href="https://t.me/YOUR_CHANNEL_USERNAME" target="_blank" class="spicy-card p-3.5 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-between block active:scale-98 transition">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center text-2xl border border-red-500/30 shadow-md shadow-red-500/10">
                         🌶️
@@ -289,7 +271,6 @@
                 <p class="text-xs text-gray-300 font-semibold">💎 ۵۰٪ تخفیف ویژه خرید تلگرام پرمیوم</p>
             </div>
 
-            <!-- دکمه خرید اشتراک Telegram Stars -->
             <button id="btn-stars-subscribe" class="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black font-extrabold py-3.5 px-4 rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 active:scale-98 transition">
                 <span>🌟 خرید اشتراک VIP با Telegram Stars</span>
             </button>
@@ -317,19 +298,17 @@
         </button>
     </nav>
 
-    <!-- Modal: ویرایش کامل پروفایل -->
+    <!-- Modal: ویرایش پروفایل -->
     <div id="edit-profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden overflow-y-auto">
         <div class="glass-modal w-full max-w-xs p-5 rounded-3xl text-right border border-red-500/30 shadow-2xl my-auto">
             <h3 class="font-bold text-lg mb-4 text-center">ویرایش پروفایل ⚙️</h3>
             
             <div class="space-y-3.5 text-xs">
-                <!-- نام -->
                 <div>
                     <label class="block text-gray-400 mb-1">نام</label>
                     <input type="text" id="input-edit-name" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500">
                 </div>
 
-                <!-- سن و جنسیت -->
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-gray-400 mb-1">سن</label>
@@ -344,22 +323,19 @@
                     </div>
                 </div>
 
-                <!-- شهر -->
                 <div>
                     <label class="block text-gray-400 mb-1">شهر محل سکونت</label>
                     <select id="input-edit-city" class="w-full bg-gray-900 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500 max-h-40"></select>
                 </div>
 
-                <!-- بیوگرافی -->
                 <div>
                     <div class="flex justify-between text-gray-400 mb-1">
-                        <label>بیوگرافی (حداکثر ۱۰ حرف)</label>
+                        <label>بیوگرافی (حداکثر ۱۰۰ حرف)</label>
                         <span id="bio-char-count" class="text-[10px] text-red-400">0/100</span>
                     </div>
                     <textarea id="input-edit-bio" maxlength="100" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-red-500"></textarea>
                 </div>
 
-                <!-- علاقه مندی ها -->
                 <div>
                     <label class="block text-gray-400 mb-1.5">علاقه‌مندی‌ها (انتخاب حداکثر ۳ مورد):</label>
                     <div id="interests-selector" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1"></div>
