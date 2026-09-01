@@ -1,186 +1,283 @@
 // ==========================================
-// Spicy Date 🌶️ - Complete Application Engine
+// ۱. تنظیمات Telegram SDK
 // ==========================================
+const API_BASE_URL = 'https://spicy-date-api.onrender.com';
 
-const API_BASE_URL = 'https://spicy-date-api.onrender.com'; // آدرس سرور API شما
 
-let currentUser = null;
-let currentProfiles = [];
-let currentProfileIndex = 0;
-
-// ۱. احراز هویت با تلگرام و دریافت توکن
-async function authenticateUser() {
-    if (!window.Telegram?.WebApp?.initData) return;
-
+if (tg) {
+    tg.ready();
+    tg.expand();
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/telegram`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-            localStorage.setItem('spicy_token', data.token);
-            currentUser = data.user;
-            console.log("ورود موفقیت‌آمیز کاربر:", currentUser);
-            loadProfiles();
-        }
-    } catch (err) {
-        console.error("خطا در ارتباط با API:", err);
-        // لود کردن دمو در صورت قطعی شبکه
-        loadProfiles();
+        tg.enableClosingConfirmation();
+    } catch (e) {
+        console.log("Closing confirmation error:", e);
     }
 }
 
-// ۲. دریافت لیست پروفایل‌ها
-async function loadProfiles() {
-    // داده‌های نمونه برای تست کامل UI
-    currentProfiles = [
-        {
-            id: "1",
-            name: "سارا",
-            age: 23,
-            city: "تهران",
-            isVip: true,
-            tags: ["کافه‌گردی", "موسیقی", "سفر"],
-            image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop"
-        },
-        {
-            id: "2",
-            name: "آنا",
-            age: 21,
-            city: "شیراز",
-            isVip: false,
-            tags: ["عکاسی", "هنر", "سینما"],
-            image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop"
-        },
-        {
-            id: "3",
-            name: "مریم",
-            age: 25,
-            city: "اصفهان",
-            isVip: true,
-            tags: ["ورزش", "کتاب", "طبیعت"],
-            image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=500&auto=format&fit=crop"
-        }
-    ];
-    
-    currentProfileIndex = 0;
-    renderCurrentProfile();
+// تابع ایجاد بازخورد لمسی (Haptic Feedback)
+function triggerHaptic(type = 'light') {
+    if (tg?.HapticFeedback) {
+        if (type === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
+        else if (type === 'medium') tg.HapticFeedback.impactOccurred('medium');
+        else if (type === 'error') tg.HapticFeedback.notificationOccurred('error');
+        else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+        else tg.HapticFeedback.impactOccurred('light');
+    }
 }
 
-// ۳. رندر کردن کارت فعلی
-function renderCurrentProfile() {
-    if (currentProfileIndex >= currentProfiles.length) {
-        showNoMoreProfiles();
+// ==========================================
+// ۲. داده‌های نمونه (Mock Data)
+// ==========================================
+const mockUsers = [
+    {
+        id: 1,
+        name: "سارا",
+        age: 23,
+        city: "تهران",
+        isVip: true,
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+        interests: ["☕ کافه‌گردی", "🎧 موسیقی", "✈️ سفر"]
+    },
+    {
+        id: 2,
+        name: "علی",
+        age: 26,
+        city: "شیراز",
+        isVip: false,
+        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+        interests: ["🎮 گیمینگ", "🍕 آشپزی"]
+    },
+    {
+        id: 3,
+        name: "مریم",
+        age: 21,
+        city: "اصفهان",
+        isVip: true,
+        image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80",
+        interests: ["📸 عکاسی", "☕ کافه‌گردی"]
+    }
+];
+
+let currentUserIndex = 0;
+
+// ==========================================
+// ۳. مدیریت تب‌ها و ناوبری
+// ==========================================
+function switchTab(tabName) {
+    triggerHaptic('light');
+
+    // مخفی کردن تمام تب‌ها
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // فعال‌سازی تب موردنظر
+    const targetTab = document.getElementById(`tab-${tabName}`);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+
+    // استایل دکمه‌های ناوبری
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        btn.classList.remove('text-red-500', 'active');
+        btn.classList.add('text-gray-400');
+    });
+
+    const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-gray-400');
+        activeBtn.classList.add('text-red-500', 'active');
+    }
+}
+
+// ==========================================
+// ۴. رندر کارت و سواپ
+// ==========================================
+function renderCard() {
+    if (currentUserIndex >= mockUsers.length) {
+        currentUserIndex = 0;
+    }
+
+    const user = mockUsers[currentUserIndex];
+    const cardImg = document.getElementById('card-img');
+    const cardName = document.getElementById('card-name');
+    const cardLoc = document.getElementById('card-location');
+    const cardInterests = document.getElementById('card-interests');
+    const vipBadge = document.getElementById('vip-badge');
+
+    if (cardImg) cardImg.src = user.image;
+    if (cardName) cardName.innerText = `${user.name}، ${user.age}`;
+    if (cardLoc) cardLoc.innerText = `📍 ${user.city}`;
+    
+    if (vipBadge) {
+        if (user.isVip) vipBadge.classList.remove('hidden');
+        else vipBadge.classList.add('hidden');
+    }
+
+    if (cardInterests) {
+        cardInterests.innerHTML = user.interests.map(tag => 
+            `<span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">${tag}</span>`
+        ).join('');
+    }
+}
+
+function nextCard(action) {
+    const card = document.getElementById('user-card');
+    if (!card) return;
+
+    if (action === 'like') {
+        triggerHaptic('heavy');
+        card.classList.add('card-swipe-right');
+        showToast('لایک ارسال شد! 🌶️');
+    } else if (action === 'pass') {
+        triggerHaptic('medium');
+        card.classList.add('card-swipe-left');
+    } else if (action === 'super') {
+        triggerHaptic('success');
+        card.classList.add('card-swipe-right');
+        showToast('سوپرلایک فرستاده شد! ⭐');
+    }
+
+    setTimeout(() => {
+        currentUserIndex++;
+        renderCard();
+        card.classList.remove('card-swipe-right', 'card-swipe-left');
+    }, 300);
+}
+
+// ==========================================
+// ۵. اعلانات (Toast)
+// ==========================================
+function showToast(message, icon = '🌶️') {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
+
+    if (toast && toastMsg) {
+        toastMsg.innerText = message;
+        if (toastIcon) toastIcon.innerText = icon;
+        
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2500);
+    }
+}
+
+// ==========================================
+// ۶. مدیریت بازی دوز
+// ==========================================
+let tttBoard = Array(9).fill(null);
+let tttTurn = '❌';
+
+function initTicTacToe() {
+    const boardEl = document.getElementById('ttt-board');
+    if (!boardEl) return;
+    
+    boardEl.innerHTML = '';
+    tttBoard = Array(9).fill(null);
+    tttTurn = '❌';
+    document.getElementById('ttt-status').innerText = `نوبت: ${tttTurn}`;
+
+    for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'tictactoe-cell spicy-card rounded-xl';
+        cell.onclick = () => makeTTTMove(i, cell);
+        boardEl.appendChild(cell);
+    }
+}
+
+function makeTTTMove(index, cellEl) {
+    if (tttBoard[index]) return;
+    
+    triggerHaptic('light');
+    tttBoard[index] = tttTurn;
+    cellEl.innerText = tttTurn;
+    cellEl.classList.add('disabled');
+
+    if (checkTTTWinner()) {
+        triggerHaptic('success');
+        document.getElementById('ttt-status').innerText = `برنده: ${tttTurn} 🎉`;
         return;
     }
 
-    const profile = currentProfiles[currentProfileIndex];
-    
-    // پیدا کردن یا ساخت عناصر متنی و تصویری
-    const nameAgeElem = document.querySelector('.profile-info h2, .user-name-age');
-    const cityElem = document.querySelector('.profile-location, .user-city');
-    const cardElem = document.querySelector('.card, .explore-card, main > div:first-child');
-
-    if (nameAgeElem) nameAgeElem.textContent = `${profile.name}، ${profile.age}`;
-    if (cityElem) cityElem.textContent = `📍 ${profile.city}`;
-    
-    if (cardElem && profile.image) {
-        const imgElem = cardElem.querySelector('img');
-        if (imgElem) {
-            imgElem.src = profile.image;
-        } else {
-            cardElem.style.backgroundImage = `url('${profile.image}')`;
-            cardElem.style.backgroundSize = 'cover';
-            cardElem.style.backgroundPosition = 'center';
-        }
-    }
+    tttTurn = tttTurn === '❌' ? '⭕' : '❌';
+    document.getElementById('ttt-status').innerText = `نوبت: ${tttTurn}`;
 }
 
-// ۴. مدیریت اکشن‌های لایک / رد با انیمیشن و هپتیک
-async function handleAction(actionType) {
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred(actionType === 'like' ? 'heavy' : 'medium');
-    }
-
-    if (currentProfileIndex >= currentProfiles.length) return;
-
-    const targetUser = currentProfiles[currentProfileIndex];
-    console.log(`اکشن ${actionType} برای:`, targetUser.name);
-
-    // انیمیشن سواپ
-    const cardElem = document.querySelector('.card, .explore-card, main > div:first-child');
-    if (cardElem) {
-        cardElem.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-        const moveX = (actionType === 'like' || actionType === 'superlike') ? 120 : -120;
-        const rotate = (actionType === 'like' || actionType === 'superlike') ? 15 : -15;
-        
-        cardElem.style.transform = `translateX(${moveX}px) rotate(${rotate}deg)`;
-        cardElem.style.opacity = '0';
-
-        setTimeout(() => {
-            cardElem.style.transition = 'none';
-            cardElem.style.transform = 'none';
-            cardElem.style.opacity = '1';
-            
-            currentProfileIndex++;
-            renderCurrentProfile();
-        }, 300);
-    } else {
-        currentProfileIndex++;
-        renderCurrentProfile();
-    }
-}
-
-// ۵. نمایش پیام تمام شدن پروفایل‌ها
-function showNoMoreProfiles() {
-    const cardElem = document.querySelector('.card, .explore-card, main > div:first-child');
-    if (cardElem) {
-        cardElem.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:350px; color:#fff; text-align:center; padding:20px;">
-                <h2 style="font-size:22px; margin-bottom:10px;">🌶️ تمام شد!</h2>
-                <p style="color:#aaa; font-size:14px;">پروفایل دیگری در محدوده شما یافت نشد.</p>
-            </div>
-        `;
-    }
-}
-
-// ۶. تنظیم دکمه‌های ناوبری پایین صفحه (Navigation Tabs)
-function setupNavigation() {
-    const navItems = document.querySelectorAll('nav a, footer button, .nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            if (window.Telegram?.WebApp?.HapticFeedback) {
-                window.Telegram.WebApp.HapticFeedback.selectionChanged();
-            }
-        });
+function checkTTTWinner() {
+    const wins = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+    return wins.some(combo => {
+        const [a, b, c] = combo;
+        return tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c];
     });
 }
 
-// اجرای اولیه
+// ==========================================
+// ۷. مقداردهی اولیه برنامه
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // آماده‌سازی تلگرام مینی‌اپ
-    if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-    }
 
-    authenticateUser();
-    setupNavigation();
+    renderCard();
 
-    // اتصال ایونت کلیک دکمه‌های اکشن اصلی
-    document.addEventListener('click', (e) => {
-        const target = e.target.closest('button, .action-btn');
-        if (!target) return;
+    // کلیک روی دکمه‌های ناوبری پایینی
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
 
-        if (target.classList.contains('btn-dislike') || target.innerText.includes('❌')) {
-            handleAction('dislike');
-        } else if (target.classList.contains('btn-like') || target.innerText.includes('🌶️')) {
-            handleAction('like');
-        } else if (target.classList.contains('btn-star') || target.innerText.includes('⭐')) {
-            handleAction('superlike');
-        }
+    // دکمه‌های کارت
+    document.getElementById('btn-like')?.addEventListener('click', () => nextCard('like'));
+    document.getElementById('btn-pass')?.addEventListener('click', () => nextCard('pass'));
+    document.getElementById('btn-super')?.addEventListener('click', () => nextCard('super'));
+
+    // بازی‌ها
+    document.getElementById('game-tictactoe')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        initTicTacToe();
+        document.getElementById('tictactoe-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-tictactoe')?.addEventListener('click', () => {
+        triggerHaptic('light');
+        document.getElementById('tictactoe-modal').classList.add('hidden');
+    });
+
+    document.getElementById('btn-reset-ttt')?.addEventListener('click', () => {
+        triggerHaptic('light');
+        initTicTacToe();
+    });
+
+    document.getElementById('game-truth-or-dare')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        document.getElementById('tod-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-tod')?.addEventListener('click', () => {
+        triggerHaptic('light');
+        document.getElementById('tod-modal').classList.add('hidden');
+    });
+
+    document.getElementById('game-rps')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        document.getElementById('rps-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-rps')?.addEventListener('click', () => {
+        triggerHaptic('light');
+        document.getElementById('rps-modal').classList.add('hidden');
+    });
+
+    document.getElementById('btn-play-voice')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        showToast('پخش وویس ۱۵ ثانیه‌ای... 🎧');
     });
 });
