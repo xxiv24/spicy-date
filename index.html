@@ -75,6 +75,12 @@
         .recording-pulse {
             animation: pulse-red 1s infinite;
         }
+
+        /* Swipe Animations */
+        .swipe-card {
+            touch-action: none;
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+        }
     </style>
 </head>
 <body class="spicy-bg min-h-screen flex flex-col justify-between overflow-hidden">
@@ -98,7 +104,7 @@
 
         <!-- ==================== TAB 1: EXPLORE ==================== -->
         <section id="tab-explore" class="tab-content active flex-1 justify-center items-center">
-            <div id="user-card" class="spicy-card w-full max-w-sm rounded-3xl overflow-hidden relative shadow-2xl border border-white/10 transition-all duration-300">
+            <div id="user-card" class="swipe-card spicy-card w-full max-w-sm rounded-3xl overflow-hidden relative shadow-2xl border border-white/10">
                 <div class="relative h-96 w-full">
                     <img id="card-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="User" class="w-full h-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent"></div>
@@ -131,8 +137,8 @@
                 </div>
 
                 <div class="p-4 flex items-center justify-evenly gap-4 bg-black/50 border-t border-white/5">
-                    <!-- تغییر رنگ دکمه رد (ضربدر) به خاکستری دودی/نئونی و حذف قرمز شلوغ -->
-                    <button id="btn-pass" class="w-14 h-14 bg-zinc-900 hover:bg-zinc-800 text-gray-400 hover:text-white rounded-full border border-zinc-700 active:scale-90 transition flex justify-center items-center text-xl shadow-lg shadow-black/40">
+                    <!-- تغییر رنگ دکمه رد (ضربدر) به خاکستری دودی استیل نئونی -->
+                    <button id="btn-pass" class="w-14 h-14 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-full border border-zinc-600 active:scale-90 transition flex justify-center items-center text-xl shadow-lg shadow-black/50">
                         ✖
                     </button>
                     <button id="btn-super" class="w-12 h-12 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-full border border-amber-500/40 active:scale-90 transition flex justify-center items-center text-lg shadow-lg shadow-amber-500/10">
@@ -149,31 +155,54 @@
         <section id="tab-games" class="tab-content flex-1 max-w-sm mx-auto w-full space-y-4">
             <h2 class="text-lg font-bold text-gray-200 mb-2">مینی‌گیم‌های چندنفره 🎮</h2>
             
-            <div id="game-tictactoe" class="spicy-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition border border-white/10">
+            <div id="game-tictactoe-card" class="spicy-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer hover:bg-white/5 transition border border-white/10">
                 <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center text-2xl border border-indigo-500/30">
                     ❌⭕
                 </div>
                 <div>
                     <h3 class="font-bold text-sm">بازی دوز (Tic-Tac-Toe)</h3>
-                    <p class="text-xs text-gray-400 mt-0.5">چالش سرعت و هوش با پارتنر</p>
+                    <p class="text-xs text-gray-400 mt-0.5">چالش آنلاین و سریع با پارتنر</p>
+                </div>
+            </div>
+
+            <!-- تخته بازی دوز -->
+            <div id="tictactoe-board-container" class="spicy-card p-5 rounded-3xl hidden border border-white/10 text-center">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="ttt-status" class="text-xs font-bold text-red-400">نوبت شماست (❌)</span>
+                    <button id="btn-reset-ttt" class="text-[10px] bg-white/10 px-2.5 py-1 rounded-lg">شروع مجدد</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2 w-60 h-60 mx-auto">
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="0"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="1"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="2"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="3"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="4"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="5"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="6"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="7"></button>
+                    <button class="ttt-cell w-full h-full bg-white/5 rounded-2xl text-2xl font-bold border border-white/10" data-index="8"></button>
                 </div>
             </div>
         </section>
 
         <!-- ==================== TAB 3: CHATS ==================== -->
-        <section id="tab-chats" class="tab-content flex-1 max-w-sm mx-auto w-full">
-            <h2 class="text-lg font-bold text-gray-200 mb-4">گفتگوها 💬</h2>
-            <div class="space-y-3">
-                <div class="spicy-card p-3 rounded-2xl flex items-center gap-3 border border-white/10">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" class="w-12 h-12 rounded-full object-cover border border-red-500/50">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-sm">سارا</h4>
-                            <span class="text-[10px] text-gray-400">14:20</span>
-                        </div>
-                        <p class="text-xs text-gray-400 truncate mt-1">موافقم! کی بریم کافه؟ ☕</p>
+        <section id="tab-chats" class="tab-content flex-1 max-w-sm mx-auto w-full flex flex-col justify-between">
+            <h2 class="text-lg font-bold text-gray-200 mb-2">گفتگوها 💬</h2>
+            
+            <div id="chat-messages-list" class="flex-1 space-y-3 overflow-y-auto mb-3 p-2">
+                <div class="spicy-card p-3 rounded-2xl border border-white/10 flex items-start gap-3 bg-white/5">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" class="w-9 h-9 rounded-full object-cover">
+                    <div>
+                        <h4 class="font-bold text-xs">سارا</h4>
+                        <p class="text-xs text-gray-300 mt-1">سلام! وقتت بخیر کافه بریم؟ ☕</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- فرم ارسال پیام -->
+            <div class="flex items-center gap-2 border-t border-white/10 pt-2">
+                <input type="text" id="input-chat-msg" placeholder="پیامی بنویسید..." class="flex-1 bg-white/5 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-red-500">
+                <button id="btn-send-chat" class="bg-red-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition">ارسال</button>
             </div>
         </section>
 
@@ -228,7 +257,7 @@
                 </div>
             </div>
 
-            <!-- بخش فعال ضبط و پخش ویس -->
+            <!-- ضبط و پخش ویس -->
             <div class="spicy-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-red-950/20 to-transparent">
                 <div class="flex items-center justify-between mb-3">
                     <div>
@@ -251,7 +280,7 @@
                 </div>
             </div>
 
-            <!-- بنر کانال تلگرام متصل به لینک -->
+            <!-- بنر کانال تلگرام -->
             <a id="btn-telegram-channel" href="https://t.me/YOUR_CHANNEL_USERNAME" target="_blank" class="spicy-card p-3.5 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-between block active:scale-98 transition">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center text-2xl border border-red-500/30 shadow-md shadow-red-500/10">
@@ -265,7 +294,7 @@
                 <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1.5 rounded-lg border border-red-500/30 font-bold">عضویت</span>
             </a>
 
-            <!-- بنر تبلیغات -->
+            <!-- تبلیغات -->
             <div class="spicy-card p-3 rounded-2xl border border-white/5 text-center bg-white/[0.02]">
                 <span class="text-[9px] text-gray-500 uppercase tracking-widest block mb-1">تبلیغات</span>
                 <p class="text-xs text-gray-300 font-semibold">💎 ۵۰٪ تخفیف ویژه خرید تلگرام پرمیوم</p>
