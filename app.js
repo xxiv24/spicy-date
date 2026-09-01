@@ -1,7 +1,7 @@
 // ==========================================
 // اتصال فرانت‌اند به API سرور
 // ==========================================
-const API_BASE_URL = 'لینک_کپی_شده_از_رندر_را_اینجا_بگذار'; 
+const API_BASE_URL = 'https://spicy-date-api.onrender.com'; 
 
 async function authenticateUser() {
     if (!window.Telegram?.WebApp?.initData) return;
