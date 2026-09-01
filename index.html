@@ -79,7 +79,6 @@
 </head>
 <body class="spicy-bg flex flex-col justify-between h-screen overflow-hidden">
 
-    <!-- Header -->
     <header class="p-3.5 flex items-center justify-between border-b border-white/5 bg-black/20 shrink-0">
         <div class="flex items-center gap-2">
             <button id="btn-back-header" class="w-8 h-8 flex items-center justify-center bg-white/5 rounded-full border border-white/10 text-gray-300 active:scale-90 transition">
@@ -88,19 +87,17 @@
             <span class="text-xl">🌶️</span>
             <h1 class="font-black text-lg bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">Spicy Date</h1>
         </div>
-        <button id="btn-buy-vip" class="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-bold text-[11px] px-3 py-1 rounded-full shadow-lg shadow-amber-500/20 active:scale-95 transition">
+        <button id="btn-buy-vip-header" class="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-bold text-[11px] px-3 py-1 rounded-full shadow-lg shadow-amber-500/20 active:scale-95 transition">
             <span>👑 VIP</span>
         </button>
     </header>
 
-    <!-- Main Views Area -->
     <main class="flex-1 relative overflow-y-auto p-4 flex flex-col items-center justify-start">
 
-        <!-- TAB 1: EXPLORE -->
         <section id="tab-explore" class="tab-panel active w-full max-w-sm flex-col items-center my-auto">
             <div id="user-card" class="spicy-card w-full rounded-3xl overflow-hidden relative shadow-2xl border border-white/10">
                 <div class="relative h-80 w-full bg-gray-900">
-                    <img id="card-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="User" class="w-full h-full object-cover object-center">
+                    <img id="card-img" src="https://via.placeholder.com/600x800/2a081a/FFFFFF?text=Spicy+Date" alt="User" class="w-full h-full object-cover object-center">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent"></div>
                     
                     <span id="card-vip-badge" class="absolute top-3 right-3 bg-amber-500/90 backdrop-blur-md text-black font-black text-[9px] px-2.5 py-0.5 rounded-full border border-amber-300">
@@ -120,8 +117,8 @@
                     </div>
 
                     <div class="absolute bottom-3 right-3 left-3 text-white">
-                        <h2 id="card-name-age" class="text-xl font-bold">سارا، ۲۳</h2>
-                        <p id="card-location" class="text-xs text-gray-300 mt-0.5">📍 تهران | ♀️ زن</p>
+                        <h2 id="card-name-age" class="text-xl font-bold">نام کاربر، سن</h2>
+                        <p id="card-location" class="text-xs text-gray-300 mt-0.5">📍 شهر | جنسیت</p>
                         <div id="card-interests" class="flex flex-wrap gap-1 mt-2"></div>
                     </div>
                 </div>
@@ -140,75 +137,37 @@
             </div>
         </section>
 
-        <!-- TAB 2: GAMES -->
         <section id="tab-games" class="tab-panel w-full max-w-sm flex-col space-y-3">
             <h2 class="text-base font-bold text-gray-200">مینی‌گیم‌های چندنفره 🎮</h2>
-            
-            <div id="game-tictactoe-card" class="spicy-card p-3.5 rounded-2xl flex items-center gap-3 cursor-pointer border border-white/10 active:scale-98 transition">
-                <div class="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-xl border border-indigo-500/30">
-                    ❌⭕
-                </div>
-                <div>
-                    <h3 class="font-bold text-xs">بازی دوز (Tic-Tac-Toe)</h3>
-                    <p class="text-[10px] text-gray-400 mt-0.5">چالش آنلاین و سریع با پارتنر</p>
-                </div>
-            </div>
-
-            <div id="tictactoe-board-container" class="spicy-card p-4 rounded-2xl hidden border border-white/10 text-center">
-                <div class="flex justify-between items-center mb-3">
-                    <span id="ttt-status" class="text-xs font-bold text-red-400">نوبت شماست (❌)</span>
-                    <button id="btn-reset-ttt" class="text-[10px] bg-white/10 px-2 py-1 rounded-lg">شروع مجدد</button>
-                </div>
-                <div class="grid grid-cols-3 gap-2 w-52 h-52 mx-auto">
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="0"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="1"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="2"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="3"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="4"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="5"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="6"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="7"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="8"></button>
-                </div>
+            <div class="spicy-card p-3.5 rounded-2xl flex items-center gap-3 border border-white/10">
+                <div class="text-xl">❌⭕</div>
+                <div><h3 class="font-bold text-xs">بازی دوز (Tic-Tac-Toe)</h3><p class="text-[10px] text-gray-400 mt-0.5">بزودی...</p></div>
             </div>
         </section>
 
-        <!-- TAB 3: CHATS -->
-        <section id="tab-chats" class="tab-panel w-full max-w-sm flex-col h-full justify-between">
-            <h2 class="text-base font-bold text-gray-200 mb-2">گفتگوها 💬</h2>
-            
-            <div id="chat-messages-list" class="flex-1 space-y-2 overflow-y-auto mb-2 p-1">
-                <div class="spicy-card p-2.5 rounded-2xl border border-white/10 flex items-start gap-2.5 bg-white/5">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" class="w-8 h-8 rounded-full object-cover">
-                    <div>
-                        <h4 class="font-bold text-xs">سارا</h4>
-                        <p class="text-[11px] text-gray-300 mt-0.5">سلام! وقتت بخیر کافه بریم؟ ☕</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 border-t border-white/10 pt-2 shrink-0">
-                <input type="text" id="input-chat-msg" placeholder="پیامی بنویسید..." class="flex-1 bg-white/5 border border-white/10 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-red-500">
-                <button id="btn-send-chat" class="bg-red-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold active:scale-95 transition">ارسال</button>
+        <section id="tab-chats" class="tab-panel w-full max-w-sm flex-col space-y-3">
+            <h2 class="text-base font-bold text-gray-200">گفتگوها 💬</h2>
+            <div class="spicy-card p-3.5 rounded-2xl flex items-center gap-3 border border-white/10">
+                <div class="text-xl">💬</div>
+                <div><h3 class="font-bold text-xs">لیست پیام‌ها</h3><p class="text-[10px] text-gray-400 mt-0.5">بزودی...</p></div>
             </div>
         </section>
 
-        <!-- TAB 4: PROFILE -->
         <section id="tab-profile" class="tab-panel w-full max-w-sm flex-col space-y-3 overflow-y-auto pb-4">
             
             <div class="spicy-card p-4 rounded-3xl text-center relative border border-white/10">
                 <div class="relative w-20 h-20 mx-auto mb-2">
-                    <img id="profile-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-red-500 shadow-md">
+                    <img id="profile-img" src="https://via.placeholder.com/150/2a081a/FFFFFF?text=Avatar" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-red-500 shadow-md">
                     <label for="direct-avatar-upload" class="absolute bottom-0 left-0 bg-red-600 text-white p-1.5 rounded-full text-[10px] shadow-md cursor-pointer active:scale-95 transition">
                         ✏️
                     </label>
                     <input type="file" id="direct-avatar-upload" accept="image/*" class="hidden">
                 </div>
                 
-                <h2 id="profile-name-age" class="text-lg font-bold">کاربر اسپایسی، ۲۴</h2>
+                <h2 id="profile-name-age" class="text-lg font-bold">نام کاربر، سن</h2>
                 <div class="flex items-center justify-center gap-1.5 mt-0.5">
-                    <p id="profile-city" class="text-xs text-gray-400">📍 تهران</p>
-                    <span id="profile-gender" class="text-xs text-pink-400">| ♀️ زن</span>
+                    <p id="profile-city" class="text-xs text-gray-400">📍 شهر</p>
+                    <span id="profile-gender" class="text-xs text-pink-400">| جنسیت</span>
                 </div>
                 
                 <div class="mt-1.5">
@@ -217,9 +176,7 @@
                     </span>
                 </div>
 
-                <p id="profile-bio" class="text-xs text-gray-300 mt-2 px-3 py-2 rounded-xl bg-white/5 border border-white/5 text-right">
-                    عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮
-                </p>
+                <p id="profile-bio" class="text-xs text-gray-300 mt-2 px-3 py-2 rounded-xl bg-white/5 border border-white/5 text-right whitespace-pre-wrap">بیوگرافی...</p>
 
                 <div id="profile-interests" class="flex flex-wrap justify-center gap-1 mt-2"></div>
 
@@ -228,26 +185,29 @@
                 </button>
             </div>
 
-            <!-- آمار -->
             <div class="grid grid-cols-3 gap-2">
                 <div class="spicy-card p-2.5 rounded-2xl text-center">
-                    <span class="block text-base font-bold text-red-400" id="stat-likes">۱۲</span>
+                    <span class="block text-base font-bold text-red-400" id="stat-likes">۰</span>
                     <span class="text-[9px] text-gray-400">لایک‌ها ❤️</span>
                 </div>
                 <div class="spicy-card p-2.5 rounded-2xl text-center">
-                    <span class="block text-base font-bold text-pink-400" id="stat-matches">۴</span>
+                    <span class="block text-base font-bold text-pink-400" id="stat-matches">۰</span>
                     <span class="text-[9px] text-gray-400">مچ‌ها 🤝</span>
                 </div>
                 <div class="spicy-card p-2.5 rounded-2xl text-center">
-                    <span class="block text-base font-bold text-amber-400" id="stat-superlikes">۲</span>
+                    <span class="block text-base font-bold text-amber-400" id="stat-superlikes">۰</span>
                     <span class="text-[9px] text-gray-400">سوپرلایک ⭐</span>
                 </div>
             </div>
 
-            <!-- ضبط ویس -->
-            <div class="spicy-card p-3 rounded-2xl border border-white/10">
+            <div class="spicy-card p-3 rounded-2xl border border-white/10 relative">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-bold text-xs">صدای اسپایسی من 🎙️</h3>
+                    <h3 class="font-bold text-xs flex items-center gap-1.5">
+                        صدای اسپایسی من 🎙️
+                        <button id="btn-delete-voice" class="text-red-400 text-[10px] hidden active:scale-90 transition">
+                            (حذف ویس 🗑️)
+                        </button>
+                    </h3>
                     <span id="voice-timer" class="text-[10px] font-mono text-red-400 bg-black/40 px-2 py-0.5 rounded">00:15</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -260,8 +220,7 @@
                 </div>
             </div>
 
-            <!-- کانال تلگرام -->
-            <a id="btn-telegram-channel" href="https://t.me/YOUR_CHANNEL_USERNAME" target="_blank" class="spicy-card p-3 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-between block active:scale-98 transition">
+            <a id="btn-telegram-channel" href="#" target="_blank" class="spicy-card p-3 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-between block active:scale-98 transition">
                 <div class="flex items-center gap-2.5">
                     <span class="text-xl">🌶️</span>
                     <div>
@@ -271,11 +230,14 @@
                 </div>
                 <span class="text-[10px] bg-red-500/20 text-red-300 px-2.5 py-1 rounded-lg font-bold">عضویت</span>
             </a>
+
+            <button id="btn-open-vip-modal" class="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black font-extrabold py-3.5 px-4 rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 active:scale-98 transition">
+                <span>🌟 خرید اشتراک VIP با Telegram Stars</span>
+            </button>
         </section>
 
     </main>
 
-    <!-- Navigation Bar -->
     <nav class="p-2 spicy-card border-t border-white/10 flex justify-around items-center shrink-0">
         <button class="nav-btn active flex flex-col items-center gap-0.5 text-red-500 text-[10px]" data-tab="explore">
             <span class="text-lg">🌶️</span>
@@ -295,9 +257,8 @@
         </button>
     </nav>
 
-    <!-- Modal: ویرایش پروفایل -->
     <div id="edit-profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
-        <div class="glass-modal w-full max-w-xs p-4 rounded-3xl text-right border border-red-500/30">
+        <div class="glass-modal w-full max-w-xs p-4 rounded-3xl text-right border border-red-500/30 relative">
             <h3 class="font-bold text-sm mb-3 text-center">ویرایش پروفایل ⚙️</h3>
             
             <div class="space-y-2.5 text-xs">
@@ -305,7 +266,6 @@
                     <label class="block text-gray-400 mb-1">نام</label>
                     <input type="text" id="input-edit-name" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none">
                 </div>
-
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-gray-400 mb-1">سن</label>
@@ -319,26 +279,22 @@
                         </select>
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-gray-400 mb-1">شهر محل سکونت</label>
                     <select id="input-edit-city" class="w-full bg-gray-900 border border-white/10 rounded-xl p-2 text-white focus:outline-none max-h-32"></select>
                 </div>
-
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-gray-400">بیوگرافی (حداکثر ۱۰۰ حرف)</label>
                         <span id="bio-char-count" class="text-[9px] text-red-400">0/100</span>
                     </div>
-                    <textarea id="input-edit-bio" maxlength="100" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none"></textarea>
+                    <textarea id="input-edit-bio" maxlength="100" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-red-500"></textarea>
                 </div>
-
                 <div>
                     <label class="block text-gray-400 mb-1">علاقه‌مندی‌ها (انتخاب ۳ مورد):</label>
                     <div id="interests-selector" class="flex flex-wrap gap-1 max-h-28 overflow-y-auto p-1"></div>
                 </div>
             </div>
-
             <div class="flex gap-2 mt-4">
                 <button id="btn-save-edit-profile" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition">ذخیره</button>
                 <button id="btn-close-edit-profile" class="flex-1 bg-white/10 text-gray-300 py-2 rounded-xl text-xs active:scale-95 transition">انصراف</button>
@@ -346,7 +302,71 @@
         </div>
     </div>
 
-    <!-- Toast -->
+    <div id="vip-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 hidden">
+        <div class="glass-modal w-full max-w-sm p-5 rounded-3xl text-right border border-amber-500/30 relative">
+            
+            <button id="btn-close-vip-modal" class="absolute top-4 left-4 text-gray-400 hover:text-white">✕</button>
+
+            <div class="text-center mb-5 mt-2">
+                <span class="text-4xl">👑</span>
+                <h3 class="font-black text-xl bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 bg-clip-text text-transparent mt-2">ارتقا به حساب VIP اسپایسی</h3>
+                <p class="text-xs text-gray-300 mt-1.5">دسترسی نامحدود، لایک ویژه، و دیده شدن بیشتر</p>
+            </div>
+            
+            <div class="space-y-3.5">
+                <div class="spicy-card p-4 rounded-2xl border border-amber-500/20 flex items-center justify-between hover:border-amber-500/50 transition cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🥉</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-white">اسپایسی برنزی (۱ ماهه)</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">پروفایل تایید شده + لایک نامحدود</p>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-extrabold text-amber-300">۴۹,۰۰۰</p>
+                        <p class="text-[9px] text-gray-400">تومان</p>
+                    </div>
+                    <button class="bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95">خرید</button>
+                </div>
+
+                <div class="spicy-card p-4 rounded-2xl border-2 border-amber-400 flex items-center justify-between relative bg-gradient-to-b from-amber-950/20 to-transparent hover:border-amber-300 transition cursor-pointer shadow-lg shadow-amber-500/10">
+                    <span class="absolute -top-2.5 -right-2.5 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">پیشنهاد ویژه 🔥</span>
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🥈</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-white">اسپایسی نقره‌ای (۳ ماهه)</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">همه امکانات + دیده شدن ۵ برابر</p>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-extrabold text-amber-300">۱۱۹,۰۰۰</p>
+                        <p class="text-[9px] text-gray-400">تومان</p>
+                    </div>
+                    <button class="bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95">خرید</button>
+                </div>
+
+                <div class="spicy-card p-4 rounded-2xl border border-amber-500/20 flex items-center justify-between hover:border-amber-500/50 transition cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">🥇</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-white">اسپایسی طلایی (۶ ماهه)</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">دسترسی کامل + چت ویژه</p>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-extrabold text-amber-300">۱۹۹,۰۰۰</p>
+                        <p class="text-[9px] text-gray-400">تومان</p>
+                    </div>
+                    <button class="bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95">خرید</button>
+                </div>
+            </div>
+
+            <div class="text-center mt-6 text-[10px] text-gray-500">
+                با خرید، شما با قوانین Spicy Date موافقت می‌کنید.
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-white/20 text-white text-xs px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 backdrop-blur-md">
         <span id="toast-icon">🌶️</span>
         <span id="toast-message">پیام سیستم</span>
