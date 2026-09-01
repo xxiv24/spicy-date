@@ -1,10 +1,10 @@
 // ==========================================
-// Spicy Date 🌶️ - Complete Main Application Logic
+// Spicy Date 🌶️ - Stable Main Engine
 // ==========================================
 
 const API_BASE_URL = 'https://spicy-date-api.onrender.com';
 
-// 1. احراز هویت کاربر و ارسال initData به بک‌اند
+// ۱. احراز هویت با تلگرام
 async function authenticateUser() {
     if (!window.Telegram?.WebApp?.initData) return;
 
@@ -25,8 +25,8 @@ async function authenticateUser() {
     }
 }
 
-// 2. مدیریت تغییر تب‌های ۴ گانه (اکسپلور، بازی‌ها، چت‌ها، پروفایل)
-function setupNavigation() {
+// ۲. مدیریت تغییر تب‌ها (بدون دستکاری HTML دکمه‌ها و عناصر صفحه)
+function setupTabNavigation() {
     const navItems = document.querySelectorAll('.nav-item, footer a, footer button, .nav-link');
     const tabContents = document.querySelectorAll('.tab-content, .page-section, section[id]');
 
@@ -36,24 +36,18 @@ function setupNavigation() {
         item.addEventListener('click', (e) => {
             e.preventDefault();
 
-            // بازخورد لمسی تلگرام (Haptic)
             if (window.Telegram?.WebApp?.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.selectionChanged();
             }
 
-            // غیرفعال کردن همه تب‌ها
             navItems.forEach(nav => nav.classList.remove('active'));
-            
-            // مخفی کردن تمام صفحات
             tabContents.forEach(tab => {
                 tab.style.display = 'none';
                 tab.classList.remove('active');
             });
 
-            // فعال کردن تب انتخاب‌شده
             item.classList.add('active');
 
-            // نمایش صفحه مربوطه
             const targetId = item.getAttribute('href')?.replace('#', '') || item.dataset.tab;
             let targetTab = targetId ? document.getElementById(targetId) : tabContents[index];
 
@@ -65,15 +59,13 @@ function setupNavigation() {
     });
 }
 
-// 3. اجرا هنگام ساختار کامل DOM
+// ۳. اجرا پس از لود کامل DOM
 document.addEventListener('DOMContentLoaded', () => {
-    // تنظیمات مینی‌اپ تلگرام
     if (window.Telegram?.WebApp) {
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
     }
 
-    // فراخوانی وظایف اصلی
     authenticateUser();
-    setupNavigation();
+    setupTabNavigation();
 });
