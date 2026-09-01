@@ -17,6 +17,7 @@ async function authenticateUser() {
         if (data.success) {
             localStorage.setItem('spicy_token', data.token);
             console.log("ورود موفقیت‌آمیز کاربر:", data.user);
+            loadUserProfile(); // بارگذاری اطلاعات پروفایل کاربر پس از ورود
         }
     } catch (err) {
         console.error("خطا در ارتباط با API:", err);
@@ -89,7 +90,18 @@ const mockUsers = [
 let profilesList = [];
 let currentUserIndex = 0;
 
-// دریافت لیست پروفایل‌ها از API (با پشتیبانی از Mock Data)
+// پروفایل پیش‌فرض کاربر جاری
+let myProfileData = {
+    name: tg?.initDataUnsafe?.user?.first_name || "کاربر اسپایسی",
+    age: 24,
+    city: "تهران",
+    bio: "عاشق قهوه و برنامه‌نویسی ☕💻",
+    isVip: false,
+    image: tg?.initDataUnsafe?.user?.photo_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80",
+    interests: ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"]
+};
+
+// دریافت لیست پروفایل‌های اکسپلور از API
 async function fetchProfiles() {
     const token = localStorage.getItem('spicy_token');
     if (token) {
@@ -108,7 +120,6 @@ async function fetchProfiles() {
             console.warn("خطا در دریافت پروفایل‌ها از سرور، استفاده از داده‌های نمونه:", err);
         }
     }
-    // در صورت عدم اتصال به API یا خالی بودن پاسخ
     profilesList = mockUsers;
     currentUserIndex = 0;
     renderCard();
@@ -134,7 +145,79 @@ async function sendActionToAPI(targetUserId, actionType) {
 }
 
 // ==========================================
-// ۳. مدیریت تب‌ها و ناوبری
+// ۳. مدیریت کامل صفحه پروفایل
+// ==========================================
+
+// بارگذاری پروفایل کاربر از API یا دیتای محلی
+async function loadUserProfile() {
+    const token = localStorage.getItem('spicy_token');
+    if (token) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/users/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.user) {
+                myProfileData = { ...myProfileData, ...data.user };
+            }
+        } catch (err) {
+            console.warn("خطا در دریافت اطلاعات پروفایل شخص:", err);
+        }
+    }
+    renderProfileUI();
+}
+
+// رندر عناصر صفحه پروفایل در HTML
+function renderProfileUI() {
+    const profileImg = document.getElementById('profile-img');
+    const profileName = document.getElementById('profile-name');
+    const profileBio = document.getElementById('profile-bio');
+    const profileCity = document.getElementById('profile-city');
+    const profileVipBadge = document.getElementById('profile-vip-badge');
+    const profileInterests = document.getElementById('profile-interests');
+
+    if (profileImg) profileImg.src = myProfileData.image;
+    if (profileName) profileName.innerText = `${myProfileData.name}، ${myProfileData.age}`;
+    if (profileBio) profileBio.innerText = myProfileData.bio || "بیوگرافی هنوز ثبت نشده است.";
+    if (profileCity) profileCity.innerText = `📍 ${myProfileData.city}`;
+
+    if (profileVipBadge) {
+        if (myProfileData.isVip) profileVipBadge.classList.remove('hidden');
+        else profileVipBadge.classList.add('hidden');
+    }
+
+    if (profileInterests && myProfileData.interests) {
+        profileInterests.innerHTML = myProfileData.interests.map(tag =>
+            `<span class="text-[10px] bg-red-500/10 text-red-400 px-3 py-1 rounded-full border border-red-500/20">${tag}</span>`
+        ).join('');
+    }
+}
+
+// ذخیره ویرایش‌های جدید پروفایل
+async function saveUserProfile(updatedFields) {
+    myProfileData = { ...myProfileData, ...updatedFields };
+    renderProfileUI();
+    showToast('پروفایل با موفقیت بروزرسانی شد! ✨', '✅');
+
+    const token = localStorage.getItem('spicy_token');
+    if (!token) return;
+
+    try {
+        await fetch(`${API_BASE_URL}/api/users/me`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedFields)
+        });
+    } catch (err) {
+        console.error("خطا در بروزرسانی پروفایل سرور:", err);
+    }
+}
+
+// ==========================================
+// ۴. مدیریت تب‌ها و ناوبری
 // ==========================================
 function switchTab(tabName) {
     triggerHaptic('light');
@@ -166,13 +249,13 @@ function switchTab(tabName) {
 }
 
 // ==========================================
-// ۴. رندر کارت و سواپ
+// ۵. رندر کارت و سواپ (اکسپلور)
 // ==========================================
 function renderCard() {
     if (!profilesList || profilesList.length === 0) return;
 
     if (currentUserIndex >= profilesList.length) {
-        currentUserIndex = 0; // چرخش یا لود مجدد
+        currentUserIndex = 0;
     }
 
     const user = profilesList[currentUserIndex];
@@ -185,14 +268,14 @@ function renderCard() {
     if (cardImg) cardImg.src = user.image || user.avatar || 'https://via.placeholder.com/600';
     if (cardName) cardName.innerText = `${user.name}، ${user.age}`;
     if (cardLoc) cardLoc.innerText = `📍 ${user.city || 'ایران'}`;
-    
+
     if (vipBadge) {
         if (user.isVip) vipBadge.classList.remove('hidden');
         else vipBadge.classList.add('hidden');
     }
 
     if (cardInterests && user.interests) {
-        cardInterests.innerHTML = user.interests.map(tag => 
+        cardInterests.innerHTML = user.interests.map(tag =>
             `<span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">${tag}</span>`
         ).join('');
     }
@@ -228,7 +311,7 @@ function nextCard(action) {
 }
 
 // ==========================================
-// ۵. اعلانات (Toast)
+// ۶. اعلانات (Toast)
 // ==========================================
 function showToast(message, icon = '🌶️') {
     const toast = document.getElementById('toast');
@@ -238,7 +321,7 @@ function showToast(message, icon = '🌶️') {
     if (toast && toastMsg) {
         toastMsg.innerText = message;
         if (toastIcon) toastIcon.innerText = icon;
-        
+
         toast.classList.add('show');
         setTimeout(() => {
             toast.classList.remove('show');
@@ -247,7 +330,7 @@ function showToast(message, icon = '🌶️') {
 }
 
 // ==========================================
-// ۶. مدیریت بازی دوز
+// ۷. مدیریت بازی دوز
 // ==========================================
 let tttBoard = Array(9).fill(null);
 let tttTurn = '❌';
@@ -255,7 +338,7 @@ let tttTurn = '❌';
 function initTicTacToe() {
     const boardEl = document.getElementById('ttt-board');
     if (!boardEl) return;
-    
+
     boardEl.innerHTML = '';
     tttBoard = Array(9).fill(null);
     tttTurn = '❌';
@@ -271,7 +354,7 @@ function initTicTacToe() {
 
 function makeTTTMove(index, cellEl) {
     if (tttBoard[index]) return;
-    
+
     triggerHaptic('light');
     tttBoard[index] = tttTurn;
     cellEl.innerText = tttTurn;
@@ -289,9 +372,9 @@ function makeTTTMove(index, cellEl) {
 
 function checkTTTWinner() {
     const wins = [
-        [0,1,2], [3,4,5], [6,7,8],
-        [0,3,6], [1,4,7], [2,5,8],
-        [0,4,8], [2,4,6]
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
     ];
     return wins.some(combo => {
         const [a, b, c] = combo;
@@ -300,7 +383,7 @@ function checkTTTWinner() {
 }
 
 // ==========================================
-// ۷. مقداردهی اولیه برنامه
+// ۸. مقداردهی اولیه برنامه
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -311,13 +394,22 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             const tabName = btn.getAttribute('data-tab');
             switchTab(tabName);
+            if (tabName === 'profile') {
+                renderProfileUI(); // بروزرسانی اطلاعات هنگام ورود به تب پروفایل
+            }
         });
     });
 
-    // دکمه‌های کارت
+    // دکمه‌های کارت اکسپلور
     document.getElementById('btn-like')?.addEventListener('click', () => nextCard('like'));
     document.getElementById('btn-pass')?.addEventListener('click', () => nextCard('pass'));
     document.getElementById('btn-super')?.addEventListener('click', () => nextCard('super'));
+
+    // دکمه‌های مربوط به پروفایل
+    document.getElementById('btn-buy-vip')?.addEventListener('click', () => {
+        triggerHaptic('heavy');
+        showToast('انتقال به درگاه ارتقا به VIP... 👑', '👑');
+    });
 
     // بازی‌ها
     document.getElementById('game-tictactoe')?.addEventListener('click', () => {
