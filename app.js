@@ -1,7 +1,8 @@
 // ==========================================
 // اتصال فرانت‌اند به API سرور
 // ==========================================
-const API_BASE_URL = 'https://spicy-date-api.onrender.com';
+const API_BASE_URL = 'https://spicy-date-api.onrender.com'; 
+
 async function authenticateUser() {
     if (!window.Telegram?.WebApp?.initData) return;
 
@@ -25,10 +26,10 @@ async function authenticateUser() {
 document.addEventListener('DOMContentLoaded', () => {
     authenticateUser();
 });
-
 // ==========================================
 // ۱. تنظیمات Telegram SDK
 // ==========================================
+const tg = window.Telegram?.WebApp;
 
 if (tg) {
     tg.ready();
