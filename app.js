@@ -1,13 +1,13 @@
 // ==========================================
-// ۱. تنظیمات و راه‌اندازی Telegram SDK
+// ۱. تنظیمات Telegram SDK
 // ==========================================
 const tg = window.Telegram?.WebApp;
 
 if (tg) {
     tg.ready();
-    tg.expand(); // تمام‌صفحه کردن مینی‌اپ
+    tg.expand();
     try {
-        tg.enableClosingConfirmation(); // هشدار هنگام بستن برنامه
+        tg.enableClosingConfirmation();
     } catch (e) {
         console.log("Closing confirmation error:", e);
     }
@@ -35,8 +35,7 @@ const mockUsers = [
         city: "تهران",
         isVip: true,
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-        interests: ["☕ کافه‌گردی", "🎧 موسیقی", "✈️ سفر"],
-        voice: "voice_sara.mp3"
+        interests: ["☕ کافه‌گردی", "🎧 موسیقی", "✈️ سفر"]
     },
     {
         id: 2,
@@ -45,8 +44,7 @@ const mockUsers = [
         city: "شیراز",
         isVip: false,
         image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
-        interests: ["🎮 گیمینگ", "🍕 آشپزی"],
-        voice: "voice_ali.mp3"
+        interests: ["🎮 گیمینگ", "🍕 آشپزی"]
     },
     {
         id: 3,
@@ -55,19 +53,11 @@ const mockUsers = [
         city: "اصفهان",
         isVip: true,
         image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80",
-        interests: ["📸 عکاسی", "☕ کافه‌گردی", "🎧 موسیقی"],
-        voice: "voice_maryam.mp3"
+        interests: ["📸 عکاسی", "☕ کافه‌گردی"]
     }
 ];
 
 let currentUserIndex = 0;
-let userProfile = {
-    name: "کاربر جدید",
-    age: 24,
-    city: "تهران",
-    isVip: false,
-    interests: ["🎧 موسیقی"]
-};
 
 // ==========================================
 // ۳. مدیریت تب‌ها و ناوبری
@@ -77,22 +67,23 @@ function switchTab(tabName) {
 
     // مخفی کردن تمام تب‌ها
     const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => tab.classList.remove('active'));
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+    });
 
-    // غیرفعال کردن دکمه‌های ناوبری
+    // فعال‌سازی تب موردنظر
+    const targetTab = document.getElementById(`tab-${tabName}`);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+
+    // استایل دکمه‌های ناوبری
     const navBtns = document.querySelectorAll('.nav-btn');
     navBtns.forEach(btn => {
         btn.classList.remove('text-red-500', 'active');
         btn.classList.add('text-gray-400');
     });
 
-    // فعال‌سازی تب انتخابی
-    const targetTab = document.getElementById(`tab-${tabName}`);
-    if (targetTab) {
-        targetTab.classList.add('active');
-    }
-
-    // فعال‌سازی استایل دکمه انتخاب شده
     const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
     if (activeBtn) {
         activeBtn.classList.remove('text-gray-400');
@@ -101,11 +92,11 @@ function switchTab(tabName) {
 }
 
 // ==========================================
-// ۴. رندر کارت کاربر و انیمیشن سواپ
+// ۴. رندر کارت و سواپ
 // ==========================================
 function renderCard() {
     if (currentUserIndex >= mockUsers.length) {
-        currentUserIndex = 0; // چرخه مجدد کارت‌ها
+        currentUserIndex = 0;
     }
 
     const user = mockUsers[currentUserIndex];
@@ -126,7 +117,7 @@ function renderCard() {
 
     if (cardInterests) {
         cardInterests.innerHTML = user.interests.map(tag => 
-            `<span class="text-[9px] bg-white/10 px-2 py-0.5 rounded-full">${tag}</span>`
+            `<span class="text-[9px] bg-white/10 px-2.5 py-1 rounded-full border border-white/5">${tag}</span>`
         ).join('');
     }
 }
@@ -156,7 +147,7 @@ function nextCard(action) {
 }
 
 // ==========================================
-// ۵. سیستم سیستم اعلانات (Toast)
+// ۵. اعلانات (Toast)
 // ==========================================
 function showToast(message, icon = '🌶️') {
     const toast = document.getElementById('toast');
@@ -175,9 +166,8 @@ function showToast(message, icon = '🌶️') {
 }
 
 // ==========================================
-// ۶. مدیریت مینی‌گیم‌ها (دوز، سنگ کاغذ قیچی و...)
+// ۶. مدیریت بازی دوز
 // ==========================================
-// بازی دوز
 let tttBoard = Array(9).fill(null);
 let tttTurn = '❌';
 
@@ -229,14 +219,13 @@ function checkTTTWinner() {
 }
 
 // ==========================================
-// ۷. ایونت لیسنرها و مقداردهی اولیه
+// ۷. مقداردهی اولیه برنامه
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
-    // لود اولیه‌ کارت‌ها
     renderCard();
 
-    // اتصالات دکمه‌های ناوبری
+    // کلیک روی دکمه‌های ناوبری پایینی
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const tabName = btn.getAttribute('data-tab');
@@ -244,29 +233,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // دکمه‌های اکشن کارت
+    // دکمه‌های کارت
     document.getElementById('btn-like')?.addEventListener('click', () => nextCard('like'));
     document.getElementById('btn-pass')?.addEventListener('click', () => nextCard('pass'));
     document.getElementById('btn-super')?.addEventListener('click', () => nextCard('super'));
 
-    // ورودی و خروج لاگین
-    document.getElementById('btn-telegram-login')?.addEventListener('click', () => {
-        triggerHaptic('medium');
-        document.getElementById('login-screen').classList.add('hidden');
-        showToast('خوش آمدید! ⚡');
-    });
-
-    document.getElementById('btn-open-register')?.addEventListener('click', () => {
-        triggerHaptic('light');
-        document.getElementById('register-modal').classList.remove('hidden');
-    });
-
-    document.getElementById('btn-close-register')?.addEventListener('click', () => {
-        triggerHaptic('light');
-        document.getElementById('register-modal').classList.add('hidden');
-    });
-
-    // بازی‌ها - مودال‌ها
+    // بازی‌ها
     document.getElementById('game-tictactoe')?.addEventListener('click', () => {
         triggerHaptic('medium');
         initTicTacToe();
@@ -303,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('rps-modal').classList.add('hidden');
     });
 
-    // دکمه ویس نمونه
     document.getElementById('btn-play-voice')?.addEventListener('click', () => {
         triggerHaptic('medium');
         showToast('پخش وویس ۱۵ ثانیه‌ای... 🎧');
