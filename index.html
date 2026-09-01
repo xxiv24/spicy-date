@@ -38,7 +38,6 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* کنترل دقیق نمایش تب‌ها */
         .tab-panel {
             display: none !important;
         }
@@ -64,8 +63,8 @@
         }
 
         .interest-chip.selected {
-            background-color: rgba(239, 68, 68, 0.25);
-            border-color: rgba(239, 68, 68, 0.8);
+            background-color: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.9);
             color: #f87171;
         }
 
@@ -97,10 +96,9 @@
     <!-- Main Views Area -->
     <main class="flex-1 relative overflow-y-auto p-4 flex flex-col items-center justify-start">
 
-        <!-- ==================== TAB 1: EXPLORE ==================== -->
+        <!-- TAB 1: EXPLORE -->
         <section id="tab-explore" class="tab-panel active w-full max-w-sm flex-col items-center my-auto">
             <div id="user-card" class="spicy-card w-full rounded-3xl overflow-hidden relative shadow-2xl border border-white/10">
-                <!-- تصویر با ابعاد استاندارد و فیت -->
                 <div class="relative h-80 w-full bg-gray-900">
                     <img id="card-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80" alt="User" class="w-full h-full object-cover object-center">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent"></div>
@@ -142,7 +140,7 @@
             </div>
         </section>
 
-        <!-- ==================== TAB 2: GAMES ==================== -->
+        <!-- TAB 2: GAMES -->
         <section id="tab-games" class="tab-panel w-full max-w-sm flex-col space-y-3">
             <h2 class="text-base font-bold text-gray-200">مینی‌گیم‌های چندنفره 🎮</h2>
             
@@ -175,7 +173,7 @@
             </div>
         </section>
 
-        <!-- ==================== TAB 3: CHATS ==================== -->
+        <!-- TAB 3: CHATS -->
         <section id="tab-chats" class="tab-panel w-full max-w-sm flex-col h-full justify-between">
             <h2 class="text-base font-bold text-gray-200 mb-2">گفتگوها 💬</h2>
             
@@ -195,11 +193,10 @@
             </div>
         </section>
 
-        <!-- ==================== TAB 4: PROFILE ==================== -->
+        <!-- TAB 4: PROFILE -->
         <section id="tab-profile" class="tab-panel w-full max-w-sm flex-col space-y-3 overflow-y-auto pb-4">
             
             <div class="spicy-card p-4 rounded-3xl text-center relative border border-white/10">
-                <!-- آواتار با سایز استاندارد ۸۰ پیکسل -->
                 <div class="relative w-20 h-20 mx-auto mb-2">
                     <img id="profile-img" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-red-500 shadow-md">
                     <label for="direct-avatar-upload" class="absolute bottom-0 left-0 bg-red-600 text-white p-1.5 rounded-full text-[10px] shadow-md cursor-pointer active:scale-95 transition">
@@ -255,10 +252,10 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button id="btn-play-voice" class="flex-1 bg-white/10 text-white py-2 rounded-xl text-xs font-semibold active:scale-95 transition">
-                        ▶️ شنیدن ویس
+                        <span id="play-voice-label">▶️ شنیدن ویس</span>
                     </button>
                     <button id="btn-record-voice" class="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-2 rounded-xl text-xs font-bold active:scale-95 transition">
-                        🎙️ شروع ضبط
+                        <span id="record-voice-label">🎙️ شروع ضبط</span>
                     </button>
                 </div>
             </div>
@@ -329,13 +326,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-gray-400 mb-1">بیوگرافی (حداکثر ۱۰ حرف)</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-gray-400">بیوگرافی (حداکثر ۱۰۰ حرف)</label>
+                        <span id="bio-char-count" class="text-[9px] text-red-400">0/100</span>
+                    </div>
                     <textarea id="input-edit-bio" maxlength="100" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white focus:outline-none"></textarea>
                 </div>
 
                 <div>
                     <label class="block text-gray-400 mb-1">علاقه‌مندی‌ها (انتخاب ۳ مورد):</label>
-                    <div id="interests-selector" class="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1"></div>
+                    <div id="interests-selector" class="flex flex-wrap gap-1 max-h-28 overflow-y-auto p-1"></div>
                 </div>
             </div>
 
