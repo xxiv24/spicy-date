@@ -1,8 +1,10 @@
 // ==========================================
-// اتصال فرانت‌اند به API سرور
+// Spicy Date 🌶️ - Complete App Logic
 // ==========================================
+
 const API_BASE_URL = 'https://spicy-date-api.onrender.com';
 
+// ۱. احراز هویت با تلگرام
 async function authenticateUser() {
     if (!window.Telegram?.WebApp?.initData) return;
 
@@ -17,7 +19,7 @@ async function authenticateUser() {
         if (data.success) {
             localStorage.setItem('spicy_token', data.token);
             console.log("ورود موفقیت‌آمیز کاربر:", data.user);
-            loadUserProfile(); // بارگذاری اطلاعات پروفایل کاربر پس از ورود
+            loadUserProfile();
         }
     } catch (err) {
         console.error("خطا در ارتباط با API:", err);
@@ -29,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// ۱. تنظیمات Telegram SDK
+// ۲. تنظیمات Telegram SDK
 // ==========================================
 const tg = window.Telegram?.WebApp;
 
@@ -55,7 +57,7 @@ function triggerHaptic(type = 'light') {
 }
 
 // ==========================================
-// ۲. داده‌های نمونه (Mock Data) + سیستم مدیریت پروفایل‌ها
+// ۳. داده‌های نمونه (Mock Data) اکسپلور
 // ==========================================
 const mockUsers = [
     {
@@ -90,18 +92,26 @@ const mockUsers = [
 let profilesList = [];
 let currentUserIndex = 0;
 
-// پروفایل پیش‌فرض کاربر جاری
+// داده‌های پروفایل کاربر متصل (کاربر جاری)
 let myProfileData = {
     name: tg?.initDataUnsafe?.user?.first_name || "کاربر اسپایسی",
     age: 24,
     city: "تهران",
-    bio: "عاشق قهوه و برنامه‌نویسی ☕💻",
+    bio: "عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮",
     isVip: false,
     image: tg?.initDataUnsafe?.user?.photo_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=80",
-    interests: ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"]
+    interests: ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"],
+    likesReceived: 12,
+    matches: 4,
+    superLikes: 2,
+    filters: {
+        gender: "all",
+        minAge: 18,
+        maxAge: 35
+    }
 };
 
-// دریافت لیست پروفایل‌های اکسپلور از API
+// دریافت لیست کاربران اکسپلور
 async function fetchProfiles() {
     const token = localStorage.getItem('spicy_token');
     if (token) {
@@ -117,7 +127,7 @@ async function fetchProfiles() {
                 return;
             }
         } catch (err) {
-            console.warn("خطا در دریافت پروفایل‌ها از سرور، استفاده از داده‌های نمونه:", err);
+            console.warn("استفاده از داده‌های نمونه به دلیل عدم اتصال API اکسپلور:", err);
         }
     }
     profilesList = mockUsers;
@@ -125,7 +135,7 @@ async function fetchProfiles() {
     renderCard();
 }
 
-// ارسال اکشن (لایک/رد/سوپرلایک) به API
+// ثبت اکشن لایک/رد/سوپرلایک
 async function sendActionToAPI(targetUserId, actionType) {
     const token = localStorage.getItem('spicy_token');
     if (!token) return;
@@ -145,10 +155,10 @@ async function sendActionToAPI(targetUserId, actionType) {
 }
 
 // ==========================================
-// ۳. مدیریت کامل صفحه پروفایل
+// ۴. سیستم مدیریت کامل پروفایل کاربر
 // ==========================================
 
-// بارگذاری پروفایل کاربر از API یا دیتای محلی
+// دریافت اطلاعات کامل پروفایل از API
 async function loadUserProfile() {
     const token = localStorage.getItem('spicy_token');
     if (token) {
@@ -161,13 +171,13 @@ async function loadUserProfile() {
                 myProfileData = { ...myProfileData, ...data.user };
             }
         } catch (err) {
-            console.warn("خطا در دریافت اطلاعات پروفایل شخص:", err);
+            console.warn("خطا در دریافت پروفایل شخصی از API:", err);
         }
     }
     renderProfileUI();
 }
 
-// رندر عناصر صفحه پروفایل در HTML
+// رندر کامل صفحه پروفایل
 function renderProfileUI() {
     const profileImg = document.getElementById('profile-img');
     const profileName = document.getElementById('profile-name');
@@ -176,14 +186,28 @@ function renderProfileUI() {
     const profileVipBadge = document.getElementById('profile-vip-badge');
     const profileInterests = document.getElementById('profile-interests');
 
+    // آمار پروفایل
+    const statLikes = document.getElementById('stat-likes');
+    const statMatches = document.getElementById('stat-matches');
+    const statSuperlikes = document.getElementById('stat-superlikes');
+
     if (profileImg) profileImg.src = myProfileData.image;
     if (profileName) profileName.innerText = `${myProfileData.name}، ${myProfileData.age}`;
     if (profileBio) profileBio.innerText = myProfileData.bio || "بیوگرافی هنوز ثبت نشده است.";
     if (profileCity) profileCity.innerText = `📍 ${myProfileData.city}`;
 
+    if (statLikes) statLikes.innerText = myProfileData.likesReceived || 0;
+    if (statMatches) statMatches.innerText = myProfileData.matches || 0;
+    if (statSuperlikes) statSuperlikes.innerText = myProfileData.superLikes || 0;
+
     if (profileVipBadge) {
-        if (myProfileData.isVip) profileVipBadge.classList.remove('hidden');
-        else profileVipBadge.classList.add('hidden');
+        if (myProfileData.isVip) {
+            profileVipBadge.innerText = 'اشتراک VIP 👑';
+            profileVipBadge.classList.remove('bg-gray-700', 'text-gray-300');
+            profileVipBadge.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-yellow-300', 'text-black', 'font-bold');
+        } else {
+            profileVipBadge.innerText = 'اشتراک معمولی';
+        }
     }
 
     if (profileInterests && myProfileData.interests) {
@@ -193,9 +217,9 @@ function renderProfileUI() {
     }
 }
 
-// ذخیره ویرایش‌های جدید پروفایل
-async function saveUserProfile(updatedFields) {
-    myProfileData = { ...myProfileData, ...updatedFields };
+// ذخیره فرم ویرایش پروفایل
+async function saveUserProfile(updatedData) {
+    myProfileData = { ...myProfileData, ...updatedData };
     renderProfileUI();
     showToast('پروفایل با موفقیت بروزرسانی شد! ✨', '✅');
 
@@ -209,32 +233,27 @@ async function saveUserProfile(updatedFields) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(updatedFields)
+            body: JSON.stringify(updatedData)
         });
     } catch (err) {
-        console.error("خطا در بروزرسانی پروفایل سرور:", err);
+        console.error("خطا در ارسال ویرایش پروفایل به سرور:", err);
     }
 }
 
 // ==========================================
-// ۴. مدیریت تب‌ها و ناوبری
+// ۵. مدیریت تب‌ها و ناوبری
 // ==========================================
 function switchTab(tabName) {
     triggerHaptic('light');
 
-    // مخفی کردن تمام تب‌ها
     const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-        tab.classList.remove('active');
-    });
+    tabs.forEach(tab => tab.classList.remove('active'));
 
-    // فعال‌سازی تب موردنظر
     const targetTab = document.getElementById(`tab-${tabName}`);
     if (targetTab) {
         targetTab.classList.add('active');
     }
 
-    // استایل دکمه‌های ناوبری
     const navBtns = document.querySelectorAll('.nav-btn');
     navBtns.forEach(btn => {
         btn.classList.remove('text-red-500', 'active');
@@ -249,7 +268,7 @@ function switchTab(tabName) {
 }
 
 // ==========================================
-// ۵. رندر کارت و سواپ (اکسپلور)
+// ۶. رندر کارت و سواپ (اکسپلور)
 // ==========================================
 function renderCard() {
     if (!profilesList || profilesList.length === 0) return;
@@ -311,7 +330,7 @@ function nextCard(action) {
 }
 
 // ==========================================
-// ۶. اعلانات (Toast)
+// ۷. اعلانات (Toast)
 // ==========================================
 function showToast(message, icon = '🌶️') {
     const toast = document.getElementById('toast');
@@ -330,7 +349,7 @@ function showToast(message, icon = '🌶️') {
 }
 
 // ==========================================
-// ۷. مدیریت بازی دوز
+// ۸. مدیریت بازی دوز
 // ==========================================
 let tttBoard = Array(9).fill(null);
 let tttTurn = '❌';
@@ -383,7 +402,7 @@ function checkTTTWinner() {
 }
 
 // ==========================================
-// ۸. مقداردهی اولیه برنامه
+// ۹. مقداردهی اولیه برنامه
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -395,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tabName = btn.getAttribute('data-tab');
             switchTab(tabName);
             if (tabName === 'profile') {
-                renderProfileUI(); // بروزرسانی اطلاعات هنگام ورود به تب پروفایل
+                renderProfileUI();
             }
         });
     });
@@ -405,22 +424,38 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-pass')?.addEventListener('click', () => nextCard('pass'));
     document.getElementById('btn-super')?.addEventListener('click', () => nextCard('super'));
 
-    // دکمه‌های مربوط به پروفایل
+    // دکمه‌های پروفایل
     document.getElementById('btn-buy-vip')?.addEventListener('click', () => {
         triggerHaptic('heavy');
-        showToast('انتقال به درگاه ارتقا به VIP... 👑', '👑');
+        showToast('انتقال به پرداخت با Telegram Stars... 🌟', '⭐');
+    });
+
+    document.getElementById('btn-edit-profile')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        document.getElementById('edit-profile-modal')?.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-edit-profile')?.addEventListener('click', () => {
+        triggerHaptic('light');
+        document.getElementById('edit-profile-modal')?.classList.add('hidden');
+    });
+
+    // ضبط وویس پروفایل
+    document.getElementById('btn-record-voice')?.addEventListener('click', () => {
+        triggerHaptic('medium');
+        showToast('ضبط صدای ۱۵ ثانیه‌ای شروع شد... 🎙️', '🎤');
     });
 
     // بازی‌ها
     document.getElementById('game-tictactoe')?.addEventListener('click', () => {
         triggerHaptic('medium');
         initTicTacToe();
-        document.getElementById('tictactoe-modal').classList.remove('hidden');
+        document.getElementById('tictactoe-modal')?.classList.remove('hidden');
     });
 
     document.getElementById('btn-close-tictactoe')?.addEventListener('click', () => {
         triggerHaptic('light');
-        document.getElementById('tictactoe-modal').classList.add('hidden');
+        document.getElementById('tictactoe-modal')?.classList.add('hidden');
     });
 
     document.getElementById('btn-reset-ttt')?.addEventListener('click', () => {
@@ -430,22 +465,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('game-truth-or-dare')?.addEventListener('click', () => {
         triggerHaptic('medium');
-        document.getElementById('tod-modal').classList.remove('hidden');
+        document.getElementById('tod-modal')?.classList.remove('hidden');
     });
 
     document.getElementById('btn-close-tod')?.addEventListener('click', () => {
         triggerHaptic('light');
-        document.getElementById('tod-modal').classList.add('hidden');
+        document.getElementById('tod-modal')?.classList.add('hidden');
     });
 
     document.getElementById('game-rps')?.addEventListener('click', () => {
         triggerHaptic('medium');
-        document.getElementById('rps-modal').classList.remove('hidden');
+        document.getElementById('rps-modal')?.classList.remove('hidden');
     });
 
     document.getElementById('btn-close-rps')?.addEventListener('click', () => {
         triggerHaptic('light');
-        document.getElementById('rps-modal').classList.add('hidden');
+        document.getElementById('rps-modal')?.classList.add('hidden');
     });
 
     document.getElementById('btn-play-voice')?.addEventListener('click', () => {
