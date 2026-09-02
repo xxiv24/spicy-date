@@ -1,5 +1,5 @@
 // ==========================================
-// Spicy Date 🌶️ - Fixed Persistence & Voice System
+// Spicy Date 🌶️ - Complete App Logic
 // ==========================================
 
 const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
@@ -198,8 +198,138 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
+// ==========================================
+// گام ۱: سیستم پیشرفته و شیک بازی دوز (Tic-Tac-Toe)
+// ==========================================
+
+let tttBoard = Array(9).fill(null);
+let tttCurrentPlayer = '❌'; 
+let tttIsGameActive = true;
+
+const tttWinningConditions = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+];
+
+function initTicTacToe() {
+    const gameCard = document.getElementById('game-tictactoe-card');
+    const boardContainer = document.getElementById('tictactoe-board-container');
+    const cells = document.querySelectorAll('.ttt-cell');
+    const btnReset = document.getElementById('btn-reset-ttt');
+
+    gameCard?.addEventListener('click', () => {
+        if (boardContainer) {
+            boardContainer.classList.toggle('hidden');
+        }
+    });
+
+    cells.forEach(cell => {
+        cell.addEventListener('click', (e) => {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            
+            if (tttBoard[index] !== null || !tttIsGameActive || tttCurrentPlayer !== '❌') return;
+
+            makeMove(index, cell);
+
+            // نوبت هوش مصنوعی
+            if (tttIsGameActive && tttCurrentPlayer === '⭕') {
+                setTimeout(makeAIMove, 500);
+            }
+        });
+    });
+
+    btnReset?.addEventListener('click', resetTTTGame);
+}
+
+function makeMove(index, cellElement) {
+    tttBoard[index] = tttCurrentPlayer;
+    cellElement.innerText = tttCurrentPlayer;
+    cellElement.classList.add('pop-in');
+    
+    if (tttCurrentPlayer === '❌') {
+        cellElement.classList.add('text-red-500', 'drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]');
+    } else {
+        cellElement.classList.add('text-amber-400', 'drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]');
+    }
+
+    const winningLine = checkTTTWinner();
+    if (winningLine) {
+        highlightWinningCells(winningLine);
+        updateTTTStatus(`بازیکن ${tttCurrentPlayer} پیروز شد! 🎉`);
+        tttIsGameActive = false;
+        showToast(`بازیکن ${tttCurrentPlayer} برنده بازی شد! 🏆`);
+        return;
+    }
+
+    if (tttBoard.every(cell => cell !== null)) {
+        updateTTTStatus('بازی مساوی شد! 🤝');
+        tttIsGameActive = false;
+        showToast('رقابت بدون برنده تمام شد!');
+        return;
+    }
+
+    tttCurrentPlayer = tttCurrentPlayer === '❌' ? '⭕' : '❌';
+    updateTTTStatus(tttCurrentPlayer === '❌' ? 'نوبت شماست (❌)' : 'نوبت حریف/ربات (⭕)...');
+}
+
+function makeAIMove() {
+    if (!tttIsGameActive) return;
+
+    // انتخاب هوشمندانه یا تصادفی خانه خالی
+    const emptyIndices = tttBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+    if (emptyIndices.length === 0) return;
+
+    const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    const cellElement = document.querySelector(`.ttt-cell[data-index="${randomIndex}"]`);
+    
+    if (cellElement) {
+        makeMove(randomIndex, cellElement);
+    }
+}
+
+function checkTTTWinner() {
+    for (let condition of tttWinningConditions) {
+        const [a, b, c] = condition;
+        if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) {
+            return condition;
+        }
+    }
+    return null;
+}
+
+function highlightWinningCells(winningIndices) {
+    winningIndices.forEach(idx => {
+        const cell = document.querySelector(`.ttt-cell[data-index="${idx}"]`);
+        if (cell) {
+            cell.classList.add('winning-glow');
+        }
+    });
+}
+
+function updateTTTStatus(msg) {
+    const statusEl = document.getElementById('ttt-status');
+    if (statusEl) statusEl.innerText = msg;
+}
+
+function resetTTTGame() {
+    tttBoard = Array(9).fill(null);
+    tttCurrentPlayer = '❌';
+    tttIsGameActive = true;
+    
+    document.querySelectorAll('.ttt-cell').forEach(cell => {
+        cell.innerText = '';
+        cell.className = 'ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner';
+    });
+
+    updateTTTStatus('نوبت شماست (❌)');
+    showToast('بازی دوز مجدداً شروع شد 🔄');
+}
+
+// Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     renderUI();
+    initTicTacToe();
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
