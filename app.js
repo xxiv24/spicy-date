@@ -15,6 +15,48 @@ const ALL_INTERESTS = [
     "📚 کتابخوانی", "🎨 هنر و طراحی"
 ];
 
+// لیست کاربران نمونه برای سیستم سوایپ
+const EXPLORE_USERS = [
+    {
+        name: "سارا",
+        age: 23,
+        city: "تهران",
+        gender: "زن",
+        isVip: true,
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+        interests: ["☕ کافه‌گردی", "🎧 موسیقی", "📸 عکاسی"]
+    },
+    {
+        name: "آرش",
+        age: 26,
+        city: "شیراز",
+        gender: "مرد",
+        isVip: false,
+        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+        interests: ["🎮 گیمینگ", "✈️ سفر", "🍕 آشپزی"]
+    },
+    {
+        name: "مریم",
+        age: 22,
+        city: "اصفهان",
+        gender: "زن",
+        isVip: true,
+        image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80",
+        interests: ["📚 کتابخوانی", "🎨 هنر و طراحی", "☕ کافه‌گردی"]
+    },
+    {
+        name: "نیما",
+        age: 25,
+        city: "کرج",
+        gender: "مرد",
+        isVip: false,
+        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80",
+        interests: ["🏋️ ورزش", "🎬 فیلم و سریال", "🎧 موسیقی"]
+    }
+];
+
+let currentCardIndex = 0;
+
 const tg = window.Telegram?.WebApp;
 if (tg) {
     tg.ready();
@@ -69,12 +111,23 @@ function renderUI() {
         `<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">${t}</span>`
     ).join('');
 
-    document.getElementById('card-img').src = profile.image;
-    document.getElementById('card-name-age').innerText = `${profile.name}، ${profile.age}`;
-    document.getElementById('card-location').innerText = `📍 ${profile.city} | ${profile.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
-    document.getElementById('card-interests').innerHTML = profile.interests.map(t => 
+    renderCurrentExploreCard();
+}
+
+function renderCurrentExploreCard() {
+    const currentUser = EXPLORE_USERS[currentCardIndex % EXPLORE_USERS.length];
+    
+    document.getElementById('card-img').src = currentUser.image;
+    document.getElementById('card-name-age').innerText = `${currentUser.name}، ${currentUser.age}`;
+    document.getElementById('card-location').innerText = `📍 ${currentUser.city} | ${currentUser.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
+    document.getElementById('card-interests').innerHTML = currentUser.interests.map(t => 
         `<span class="text-[9px] bg-white/10 px-2 py-0.5 rounded-full">${t}</span>`
     ).join('');
+
+    const cardVip = document.getElementById('card-vip-badge');
+    if (cardVip) {
+        cardVip.style.display = currentUser.isVip ? 'block' : 'none';
+    }
 }
 
 // سیستم ضبط و پخش صدا
@@ -196,6 +249,143 @@ function showToast(msg) {
     document.getElementById('toast-message').innerText = msg;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ==========================================
+// موتور سوایپ تعاملی کارت اکسپلور (Swipe Controller)
+// ==========================================
+
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let currentX = 0;
+let currentY = 0;
+
+function initSwipeController() {
+    const card = document.getElementById('user-card');
+    const badgeLike = document.getElementById('badge-like');
+    const badgePass = document.getElementById('badge-pass');
+    const badgeSuper = document.getElementById('badge-super');
+
+    if (!card) return;
+
+    const onStart = (e) => {
+        if (e.target.closest('button')) return; // جلوگیری از تداخل کلیک دکمه‌ها
+        isDragging = true;
+        card.classList.remove('reset-card', 'swiping-left', 'swiping-right', 'swiping-up');
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        startX = clientX;
+        startY = clientY;
+    };
+
+    const onMove = (e) => {
+        if (!isDragging) return;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        currentX = clientX - startX;
+        currentY = clientY - startY;
+
+        const rotate = currentX * 0.08;
+        card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
+
+        // اپاسیتی نشانگرها
+        if (currentX > 30) {
+            badgeLike.style.opacity = Math.min(currentX / 120, 1);
+            badgePass.style.opacity = 0;
+            badgeSuper.style.opacity = 0;
+        } else if (currentX < -30) {
+            badgePass.style.opacity = Math.min(Math.abs(currentX) / 120, 1);
+            badgeLike.style.opacity = 0;
+            badgeSuper.style.opacity = 0;
+        } else if (currentY < -40) {
+            badgeSuper.style.opacity = Math.min(Math.abs(currentY) / 120, 1);
+            badgeLike.style.opacity = 0;
+            badgePass.style.opacity = 0;
+        } else {
+            badgeLike.style.opacity = 0;
+            badgePass.style.opacity = 0;
+            badgeSuper.style.opacity = 0;
+        }
+    };
+
+    const onEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const threshold = 100;
+        const upThreshold = -120;
+
+        if (currentX > threshold) {
+            triggerSwipe('right');
+        } else if (currentX < -threshold) {
+            triggerSwipe('left');
+        } else if (currentY < upThreshold) {
+            triggerSwipe('up');
+        } else {
+            // ریست به موقعیت اولیه
+            card.style.transform = '';
+            card.classList.add('reset-card');
+            resetBadges();
+        }
+
+        currentX = 0;
+        currentY = 0;
+    };
+
+    // Touch Events
+    card.addEventListener('touchstart', onStart, { passive: true });
+    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('touchend', onEnd);
+
+    // Mouse Events
+    card.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+
+    // دکمه‌های پایینی
+    document.getElementById('btn-like')?.addEventListener('click', () => triggerSwipe('right'));
+    document.getElementById('btn-pass')?.addEventListener('click', () => triggerSwipe('left'));
+    document.getElementById('btn-super')?.addEventListener('click', () => triggerSwipe('up'));
+}
+
+function triggerSwipe(direction) {
+    const card = document.getElementById('user-card');
+    if (!card) return;
+
+    resetBadges();
+
+    if (direction === 'right') {
+        card.classList.add('swiping-right');
+        showToast('لایک شد! ❤️');
+    } else if (direction === 'left') {
+        card.classList.add('swiping-left');
+        showToast('رد شد ✖');
+    } else if (direction === 'up') {
+        card.classList.add('swiping-up');
+        showToast('سوپر لایک ارسال شد! ⭐');
+    }
+
+    setTimeout(() => {
+        currentCardIndex++;
+        renderCurrentExploreCard();
+        card.classList.remove('swiping-left', 'swiping-right', 'swiping-up');
+        card.style.transform = '';
+    }, 350);
+}
+
+function resetBadges() {
+    const badgeLike = document.getElementById('badge-like');
+    const badgePass = document.getElementById('badge-pass');
+    const badgeSuper = document.getElementById('badge-super');
+
+    if (badgeLike) badgeLike.style.opacity = 0;
+    if (badgePass) badgePass.style.opacity = 0;
+    if (badgeSuper) badgeSuper.style.opacity = 0;
 }
 
 // ==========================================
@@ -325,7 +515,7 @@ function resetTTTGame() {
 }
 
 // ==========================================
-// بازی ۲: جرأت یا حقیقت اسپایسی (Spicy Truth or Dare) - متن‌محور
+// بازی ۲: جرأت یا حقیقت اسپایسی (Spicy Truth or Dare)
 // ==========================================
 
 const TRUTH_QUESTIONS = [
@@ -369,7 +559,7 @@ function getNextTOD(type) {
     if (!displayCard || !badgeEl || !textEl) return;
 
     displayCard.classList.remove('tod-card-flip');
-    void displayCard.offsetWidth; // Trigger Reflow برای اجرای مجدد انیمیشن
+    void displayCard.offsetWidth;
 
     if (type === 'truth') {
         const randomTruth = TRUTH_QUESTIONS[Math.floor(Math.random() * TRUTH_QUESTIONS.length)];
@@ -389,6 +579,7 @@ function getNextTOD(type) {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     renderUI();
+    initSwipeController();
     initTicTacToe();
     initTruthOrDare();
 
