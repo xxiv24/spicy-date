@@ -199,7 +199,7 @@ function showToast(msg) {
 }
 
 // ==========================================
-// گام ۱: سیستم پیشرفته و شیک بازی دوز (Tic-Tac-Toe)
+// بازی ۱: دوز نئونی (Tic-Tac-Toe)
 // ==========================================
 
 let tttBoard = Array(9).fill(null);
@@ -232,7 +232,6 @@ function initTicTacToe() {
 
             makeMove(index, cell);
 
-            // نوبت هوش مصنوعی
             if (tttIsGameActive && tttCurrentPlayer === '⭕') {
                 setTimeout(makeAIMove, 500);
             }
@@ -276,7 +275,6 @@ function makeMove(index, cellElement) {
 function makeAIMove() {
     if (!tttIsGameActive) return;
 
-    // انتخاب هوشمندانه یا تصادفی خانه خالی
     const emptyIndices = tttBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
     if (emptyIndices.length === 0) return;
 
@@ -326,10 +324,73 @@ function resetTTTGame() {
     showToast('بازی دوز مجدداً شروع شد 🔄');
 }
 
+// ==========================================
+// بازی ۲: جرأت یا حقیقت اسپایسی (Spicy Truth or Dare) - متن‌محور
+// ==========================================
+
+const TRUTH_QUESTIONS = [
+    "اولین چیزی که در اولین نگاه توجهت رو جلب می‌کنه چیست؟ 🤔",
+    "عجیب‌ترین یا خنده‌دارترین قولی که به کسی دادی چی بوده؟ 😂",
+    "اگر فقط یک روز فرصت زندگی داشتی، اون روز رو چطور می‌گذروندی؟ ⏳",
+    "بزرگ‌ترین بی‌حوصلگی یا دیوانه‌بازی که تا حالا کردی چی بوده؟ 🤪",
+    "آهنگی که قایمکی گوش میدی و جلوی بقیه نمیگی چیه؟ 🎧",
+    "از نظر تو یک رقرار کامل و عالی چه ویژگی‌هایی داره؟ ☕❤️"
+];
+
+const DARE_CHALLENGES = [
+    "یک ایموجی خنده‌دار یا اسپایسی انتخاب کن و توی چت بفرست! 🌶️",
+    "یک لطیفه یا خاطره خنده‌دار ۲ خطی بنویس و توی چت ارسال کن! 🤣",
+    "به طرف مقابل یک لقب اختصاصی و بامزه هدیه بده! 🏷️",
+    "یک بیوگرافی یا جمله‌ای باحال درباره خودت بساز و توی چت بفرست! ✍️",
+    "به مدت ۱ دقیقه فقط با ایموجی در چت صحبت کن! 🤐"
+];
+
+function initTruthOrDare() {
+    const todCard = document.getElementById('game-tod-card');
+    const boardContainer = document.getElementById('tod-board-container');
+    const btnTruth = document.getElementById('btn-tod-truth');
+    const btnDare = document.getElementById('btn-tod-dare');
+
+    todCard?.addEventListener('click', () => {
+        if (boardContainer) {
+            boardContainer.classList.toggle('hidden');
+        }
+    });
+
+    btnTruth?.addEventListener('click', () => getNextTOD('truth'));
+    btnDare?.addEventListener('click', () => getNextTOD('dare'));
+}
+
+function getNextTOD(type) {
+    const displayCard = document.getElementById('tod-display-card');
+    const badgeEl = document.getElementById('tod-badge');
+    const textEl = document.getElementById('tod-text');
+
+    if (!displayCard || !badgeEl || !textEl) return;
+
+    displayCard.classList.remove('tod-card-flip');
+    void displayCard.offsetWidth; // Trigger Reflow برای اجرای مجدد انیمیشن
+
+    if (type === 'truth') {
+        const randomTruth = TRUTH_QUESTIONS[Math.floor(Math.random() * TRUTH_QUESTIONS.length)];
+        badgeEl.innerText = '🤔 حقیقت (Truth)';
+        badgeEl.className = 'text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full mb-1.5 font-bold';
+        textEl.innerText = randomTruth;
+    } else {
+        const randomDare = DARE_CHALLENGES[Math.floor(Math.random() * DARE_CHALLENGES.length)];
+        badgeEl.innerText = '🔥 جرأت (Dare)';
+        badgeEl.className = 'text-[9px] bg-pink-500/20 text-pink-400 border border-pink-500/30 px-2.5 py-0.5 rounded-full mb-1.5 font-bold';
+        textEl.innerText = randomDare;
+    }
+
+    displayCard.classList.add('tod-card-flip');
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     renderUI();
     initTicTacToe();
+    initTruthOrDare();
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
