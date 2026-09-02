@@ -3,6 +3,7 @@
 // ==========================================
 
 const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
+const CHAT_STORAGE_KEY = 'spicy_user_chats_history_v1';
 
 const IRAN_CITIES = [
     "تهران", "مشهد", "اصفهان", "کرج", "شیراز", "تبریز", "قم", "اهواز", 
@@ -15,7 +16,35 @@ const ALL_INTERESTS = [
     "📚 کتابخوانی", "🎨 هنر و طراحی"
 ];
 
-// لیست کاربران نمونه برای سیستم سوایپ
+// لیست مخاطبان چت
+const MATCHES = [
+    {
+        id: 1,
+        name: "سارا",
+        age: 23,
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+        replies: [
+            "سلام! چطوری؟ 😊",
+            "کدوم کافه‌ها رو بیشتر دوست داری؟ ☕",
+            "عالیه! موافقم، فردا تایم داری صحبت کنیم؟ ✨",
+            "خیلی باحالی 🌶️"
+        ]
+    },
+    {
+        id: 2,
+        name: "مریم",
+        age: 22,
+        image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80",
+        replies: [
+            "سلام، وقتت بخیر!",
+            "منم عاشق فیلم و موسیقی‌ام 🎧",
+            "دوست داری یه دست دوز نئونی بازی کنیم؟ 🎮"
+        ]
+    }
+];
+
+let activeMatchIndex = 0;
+
 const EXPLORE_USERS = [
     {
         name: "سارا",
@@ -78,11 +107,7 @@ function loadProfile() {
 
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-        try {
-            return { ...defaultData, ...JSON.parse(saved) };
-        } catch (e) {
-            return defaultData;
-        }
+        try { return { ...defaultData, ...JSON.parse(saved) }; } catch (e) { return defaultData; }
     }
     return defaultData;
 }
@@ -100,6 +125,88 @@ function saveProfile() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
+// ==========================================
+// چت و ذخیره تاریخچه پیام‌ها
+// ==========================================
+
+function loadChatHistory() {
+    const defaultChat = {
+        1: [
+            { sender: 'other', text: 'سلام! وقتت بخیر کافه بریم؟ ☕', time: '14:20' }
+        ],
+        2: [
+            { sender: 'other', text: 'سلام چطوری؟ 🌿', time: '12:00' }
+        ]
+    };
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (saved) {
+        try { return JSON.parse(saved); } catch (e) { return defaultChat; }
+    }
+    return defaultChat;
+}
+
+let chatHistory = loadChatHistory();
+
+function saveChatHistory() {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+}
+
+function renderChatMessages() {
+    const currentMatch = MATCHES[activeMatchIndex];
+    document.getElementById('chat-active-name').innerText = currentMatch.name;
+    document.getElementById('chat-active-avatar').src = currentMatch.image;
+
+    const listContainer = document.getElementById('chat-messages-list');
+    const messages = chatHistory[currentMatch.id] || [];
+
+    if (messages.length === 0) {
+        listContainer.innerHTML = `<div class="text-center text-xs text-gray-500 py-8">هنوز پیامی رد و بدل نشده است 👋</div>`;
+        return;
+    }
+
+    listContainer.innerHTML = messages.map(msg => {
+        const isMe = msg.sender === 'me';
+        return `
+            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'} px-3.5 py-2 max-w-[80%] text-xs text-white shadow-md">
+                    ${msg.text}
+                </div>
+                <span class="text-[8px] text-gray-500 mt-0.5 px-1 font-mono">${msg.time}</span>
+            </div>
+        `;
+    }).join('');
+
+    listContainer.scrollTop = listContainer.scrollHeight;
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('input-chat-msg');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const currentMatch = MATCHES[activeMatchIndex];
+    if (!chatHistory[currentMatch.id]) chatHistory[currentMatch.id] = [];
+
+    const now = new Date();
+    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
+
+    // اضافه کردن پیام کاربر
+    chatHistory[currentMatch.id].push({ sender: 'me', text, time: timeStr });
+    input.value = '';
+    saveChatHistory();
+    renderChatMessages();
+
+    // پاسخ خودکار مخاطب پس از ۱.۵ ثانیه
+    setTimeout(() => {
+        const replies = currentMatch.replies;
+        const randomReply = replies[Math.floor(Math.random() * replies.length)];
+        
+        chatHistory[currentMatch.id].push({ sender: 'other', text: randomReply, time: timeStr });
+        saveChatHistory();
+        renderChatMessages();
+    }, 1500);
+}
+
 function renderUI() {
     document.getElementById('profile-img').src = profile.image;
     document.getElementById('profile-name-age').innerText = `${profile.name}، ${profile.age}`;
@@ -112,6 +219,7 @@ function renderUI() {
     ).join('');
 
     renderCurrentExploreCard();
+    renderChatMessages();
 }
 
 function renderCurrentExploreCard() {
@@ -252,7 +360,7 @@ function showToast(msg) {
 }
 
 // ==========================================
-// موتور سوایپ تعاملی کارت اکسپلور (Swipe Controller)
+// موتور سوایپ
 // ==========================================
 
 let isDragging = false;
@@ -270,7 +378,7 @@ function initSwipeController() {
     if (!card) return;
 
     const onStart = (e) => {
-        if (e.target.closest('button')) return; // جلوگیری از تداخل کلیک دکمه‌ها
+        if (e.target.closest('button')) return;
         isDragging = true;
         card.classList.remove('reset-card', 'swiping-left', 'swiping-right', 'swiping-up');
         
@@ -293,7 +401,6 @@ function initSwipeController() {
         const rotate = currentX * 0.08;
         card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
 
-        // اپاسیتی نشانگرها
         if (currentX > 30) {
             badgeLike.style.opacity = Math.min(currentX / 120, 1);
             badgePass.style.opacity = 0;
@@ -327,7 +434,6 @@ function initSwipeController() {
         } else if (currentY < upThreshold) {
             triggerSwipe('up');
         } else {
-            // ریست به موقعیت اولیه
             card.style.transform = '';
             card.classList.add('reset-card');
             resetBadges();
@@ -337,17 +443,14 @@ function initSwipeController() {
         currentY = 0;
     };
 
-    // Touch Events
     card.addEventListener('touchstart', onStart, { passive: true });
     window.addEventListener('touchmove', onMove, { passive: true });
     window.addEventListener('touchend', onEnd);
 
-    // Mouse Events
     card.addEventListener('mousedown', onStart);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
 
-    // دکمه‌های پایینی
     document.getElementById('btn-like')?.addEventListener('click', () => triggerSwipe('right'));
     document.getElementById('btn-pass')?.addEventListener('click', () => triggerSwipe('left'));
     document.getElementById('btn-super')?.addEventListener('click', () => triggerSwipe('up'));
@@ -389,7 +492,7 @@ function resetBadges() {
 }
 
 // ==========================================
-// بازی ۱: دوز نئونی (Tic-Tac-Toe)
+// بازی دوز و جرأت حقیقت
 // ==========================================
 
 let tttBoard = Array(9).fill(null);
@@ -409,19 +512,15 @@ function initTicTacToe() {
     const btnReset = document.getElementById('btn-reset-ttt');
 
     gameCard?.addEventListener('click', () => {
-        if (boardContainer) {
-            boardContainer.classList.toggle('hidden');
-        }
+        if (boardContainer) boardContainer.classList.toggle('hidden');
     });
 
     cells.forEach(cell => {
         cell.addEventListener('click', (e) => {
             const index = parseInt(e.target.getAttribute('data-index'));
-            
             if (tttBoard[index] !== null || !tttIsGameActive || tttCurrentPlayer !== '❌') return;
 
             makeMove(index, cell);
-
             if (tttIsGameActive && tttCurrentPlayer === '⭕') {
                 setTimeout(makeAIMove, 500);
             }
@@ -464,24 +563,18 @@ function makeMove(index, cellElement) {
 
 function makeAIMove() {
     if (!tttIsGameActive) return;
-
     const emptyIndices = tttBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
     if (emptyIndices.length === 0) return;
 
     const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
     const cellElement = document.querySelector(`.ttt-cell[data-index="${randomIndex}"]`);
-    
-    if (cellElement) {
-        makeMove(randomIndex, cellElement);
-    }
+    if (cellElement) makeMove(randomIndex, cellElement);
 }
 
 function checkTTTWinner() {
     for (let condition of tttWinningConditions) {
         const [a, b, c] = condition;
-        if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) {
-            return condition;
-        }
+        if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) return condition;
     }
     return null;
 }
@@ -489,9 +582,7 @@ function checkTTTWinner() {
 function highlightWinningCells(winningIndices) {
     winningIndices.forEach(idx => {
         const cell = document.querySelector(`.ttt-cell[data-index="${idx}"]`);
-        if (cell) {
-            cell.classList.add('winning-glow');
-        }
+        if (cell) cell.classList.add('winning-glow');
     });
 }
 
@@ -504,35 +595,24 @@ function resetTTTGame() {
     tttBoard = Array(9).fill(null);
     tttCurrentPlayer = '❌';
     tttIsGameActive = true;
-    
     document.querySelectorAll('.ttt-cell').forEach(cell => {
         cell.innerText = '';
         cell.className = 'ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner';
     });
-
     updateTTTStatus('نوبت شماست (❌)');
     showToast('بازی دوز مجدداً شروع شد 🔄');
 }
 
-// ==========================================
-// بازی ۲: جرأت یا حقیقت اسپایسی (Spicy Truth or Dare)
-// ==========================================
-
 const TRUTH_QUESTIONS = [
     "اولین چیزی که در اولین نگاه توجهت رو جلب می‌کنه چیست؟ 🤔",
     "عجیب‌ترین یا خنده‌دارترین قولی که به کسی دادی چی بوده؟ 😂",
-    "اگر فقط یک روز فرصت زندگی داشتی، اون روز رو چطور می‌گذروندی؟ ⏳",
-    "بزرگ‌ترین بی‌حوصلگی یا دیوانه‌بازی که تا حالا کردی چی بوده؟ 🤪",
-    "آهنگی که قایمکی گوش میدی و جلوی بقیه نمیگی چیه؟ 🎧",
-    "از نظر تو یک رقرار کامل و عالی چه ویژگی‌هایی داره؟ ☕❤️"
+    "اگر فقط یک روز فرصت زندگی داشتی، اون روز رو چطور می‌گذروندی؟ ⏳"
 ];
 
 const DARE_CHALLENGES = [
     "یک ایموجی خنده‌دار یا اسپایسی انتخاب کن و توی چت بفرست! 🌶️",
     "یک لطیفه یا خاطره خنده‌دار ۲ خطی بنویس و توی چت ارسال کن! 🤣",
-    "به طرف مقابل یک لقب اختصاصی و بامزه هدیه بده! 🏷️",
-    "یک بیوگرافی یا جمله‌ای باحال درباره خودت بساز و توی چت بفرست! ✍️",
-    "به مدت ۱ دقیقه فقط با ایموجی در چت صحبت کن! 🤐"
+    "به طرف مقابل یک لقب اختصاصی و بامزه هدیه بده! 🏷️"
 ];
 
 function initTruthOrDare() {
@@ -542,9 +622,7 @@ function initTruthOrDare() {
     const btnDare = document.getElementById('btn-tod-dare');
 
     todCard?.addEventListener('click', () => {
-        if (boardContainer) {
-            boardContainer.classList.toggle('hidden');
-        }
+        if (boardContainer) boardContainer.classList.toggle('hidden');
     });
 
     btnTruth?.addEventListener('click', () => getNextTOD('truth'));
@@ -582,6 +660,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initSwipeController();
     initTicTacToe();
     initTruthOrDare();
+
+    // سوئیچ مخاطب چت
+    document.getElementById('btn-switch-match')?.addEventListener('click', () => {
+        activeMatchIndex = (activeMatchIndex + 1) % MATCHES.length;
+        renderChatMessages();
+        showToast(`مخاطب تغییر کرد: ${MATCHES[activeMatchIndex].name} 💬`);
+    });
+
+    // ارسال پیام چت
+    document.getElementById('btn-send-chat')?.addEventListener('click', sendChatMessage);
+    document.getElementById('input-chat-msg')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
+    });
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
