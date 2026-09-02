@@ -75,6 +75,31 @@
         .recording-pulse {
             animation: pulse-red 1s infinite;
         }
+
+        /* جلوه‌های اختصاصی دوز نئونی */
+        .ttt-cell {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ttt-cell:active {
+            transform: scale(0.92);
+        }
+        .ttt-cell.pop-in {
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .winning-glow {
+            background: rgba(245, 158, 11, 0.25) !important;
+            border-color: rgba(245, 158, 11, 0.9) !important;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+            animation: pulse-glow 1.2s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+            100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.9); }
+        }
     </style>
 </head>
 <body class="spicy-bg flex flex-col justify-between h-screen overflow-hidden">
@@ -144,31 +169,39 @@
         <section id="tab-games" class="tab-panel w-full max-w-sm flex-col space-y-3">
             <h2 class="text-base font-bold text-gray-200">مینی‌گیم‌های چندنفره 🎮</h2>
             
-            <div id="game-tictactoe-card" class="spicy-card p-3.5 rounded-2xl flex items-center gap-3 cursor-pointer border border-white/10 active:scale-98 transition">
-                <div class="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-xl border border-indigo-500/30">
-                    ❌⭕
+            <div id="game-tictactoe-card" class="spicy-card p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border border-white/10 active:scale-98 transition hover:border-red-500/30">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-red-600/30 to-amber-500/20 rounded-xl flex items-center justify-center text-xl border border-red-500/30 shadow-inner">
+                        ❌⭕
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xs text-white">بازی دوز نئونی (Tic-Tac-Toe)</h3>
+                        <p class="text-[10px] text-gray-400 mt-0.5">چالش دو نفره یا رقابت با هوش مصنوعی</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-xs">بازی دوز (Tic-Tac-Toe)</h3>
-                    <p class="text-[10px] text-gray-400 mt-0.5">چالش آنلاین و سریع با پارتنر</p>
-                </div>
+                <span class="text-xs text-gray-400">▼</span>
             </div>
 
-            <div id="tictactoe-board-container" class="spicy-card p-4 rounded-2xl hidden border border-white/10 text-center">
-                <div class="flex justify-between items-center mb-3">
-                    <span id="ttt-status" class="text-xs font-bold text-red-400">نوبت شماست (❌)</span>
-                    <button id="btn-reset-ttt" class="text-[10px] bg-white/10 px-2 py-1 rounded-lg">شروع مجدد</button>
+            <div id="tictactoe-board-container" class="spicy-card p-4 rounded-2xl hidden border border-red-500/20 bg-black/40 text-center shadow-xl backdrop-blur-xl">
+                <div class="flex justify-between items-center mb-3.5 px-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                        <span id="ttt-status" class="text-xs font-bold text-red-400">نوبت شماست (❌)</span>
+                    </div>
+                    <button id="btn-reset-ttt" class="text-[10px] bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 px-2.5 py-1 rounded-xl active:scale-95 transition">
+                        🔄 بازی جدید
+                    </button>
                 </div>
-                <div class="grid grid-cols-3 gap-2 w-52 h-52 mx-auto">
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="0"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="1"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="2"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="3"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="4"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="5"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="6"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="7"></button>
-                    <button class="ttt-cell w-full h-full bg-white/5 rounded-xl text-xl font-bold border border-white/10" data-index="8"></button>
+                <div class="grid grid-cols-3 gap-2.5 w-56 h-56 mx-auto p-1 bg-white/5 rounded-2xl border border-white/5">
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="0"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="1"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="2"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="3"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="4"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="5"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="6"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="7"></button>
+                    <button class="ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner" data-index="8"></button>
                 </div>
             </div>
         </section>
