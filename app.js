@@ -1,5 +1,5 @@
 // ==========================================
-// Spicy Date 🌶️ - Complete App Logic
+// Spicy Date 🌶️ - Full Functional Logic
 // ==========================================
 
 const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
@@ -16,7 +16,6 @@ const ALL_INTERESTS = [
     "📚 کتابخوانی", "🎨 هنر و طراحی"
 ];
 
-// لیست مخاطبان چت
 const MATCHES = [
     {
         id: 1,
@@ -99,7 +98,7 @@ function loadProfile() {
         gender: "زن",
         city: "تهران",
         bio: "عاشق چالش‌های گیمینگ و کافه‌گردی ☕🎮",
-        isVip: true,
+        isVip: false,
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
         interests: ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"],
         audioBase64: null
@@ -125,18 +124,11 @@ function saveProfile() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
-// ==========================================
-// چت و ذخیره تاریخچه پیام‌ها
-// ==========================================
-
+// تاریخچه چت
 function loadChatHistory() {
     const defaultChat = {
-        1: [
-            { sender: 'other', text: 'سلام! وقتت بخیر کافه بریم؟ ☕', time: '14:20' }
-        ],
-        2: [
-            { sender: 'other', text: 'سلام چطوری؟ 🌿', time: '12:00' }
-        ]
+        1: [{ sender: 'other', text: 'سلام! وقتت بخیر کافه بریم؟ ☕', time: '14:20' }],
+        2: [{ sender: 'other', text: 'سلام چطوری؟ 🌿', time: '12:00' }]
     };
     const saved = localStorage.getItem(CHAT_STORAGE_KEY);
     if (saved) {
@@ -190,13 +182,11 @@ function sendChatMessage() {
     const now = new Date();
     const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
 
-    // اضافه کردن پیام کاربر
     chatHistory[currentMatch.id].push({ sender: 'me', text, time: timeStr });
     input.value = '';
     saveChatHistory();
     renderChatMessages();
 
-    // پاسخ خودکار مخاطب پس از ۱.۵ ثانیه
     setTimeout(() => {
         const replies = currentMatch.replies;
         const randomReply = replies[Math.floor(Math.random() * replies.length)];
@@ -214,6 +204,17 @@ function renderUI() {
     document.getElementById('profile-gender').innerText = `| ${profile.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
     document.getElementById('profile-bio').innerText = profile.bio || "بدون بیوگرافی";
     
+    const vipBadge = document.getElementById('profile-vip-badge');
+    if (vipBadge) {
+        if (profile.isVip) {
+            vipBadge.innerText = '👑 کاربر VIP اسپایسی';
+            vipBadge.className = 'inline-block text-[9px] bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black px-2.5 py-0.5 rounded-full shadow-md';
+        } else {
+            vipBadge.innerText = 'اشتراک معمولی';
+            vipBadge.className = 'inline-block text-[9px] bg-gray-800 text-gray-300 px-2.5 py-0.5 rounded-full border border-white/10';
+        }
+    }
+
     document.getElementById('profile-interests').innerHTML = profile.interests.map(t => 
         `<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">${t}</span>`
     ).join('');
@@ -238,17 +239,14 @@ function renderCurrentExploreCard() {
     }
 }
 
-// سیستم ضبط و پخش صدا
 async function startRecording() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
-        
         const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
         mediaRecorder = new MediaRecorder(stream, { mimeType });
 
         mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-
         mediaRecorder.onstop = () => {
             const audioBlob = new Blob(audioChunks, { type: mimeType });
             const reader = new FileReader();
@@ -256,7 +254,7 @@ async function startRecording() {
             reader.onloadend = () => {
                 profile.audioBase64 = reader.result;
                 saveProfile();
-                showToast('ویس با موفقیت ثبت و ذخیره شد! 🎙️');
+                showToast('ویس با موفقیت ثبت شد! 🎙️');
             };
         };
 
@@ -270,7 +268,6 @@ async function startRecording() {
             document.getElementById('voice-timer').innerText = `00:${recordSecondsLeft < 10 ? '0' : ''}${recordSecondsLeft}`;
             if (recordSecondsLeft <= 0) stopRecording();
         }, 1000);
-
     } catch (err) {
         showToast('دسترسی به میکروفون داده نشد!');
     }
@@ -292,7 +289,6 @@ function togglePlayAudio() {
         showToast('هنوز ویسی ضبط نکرده‌اید!');
         return;
     }
-
     if (audioInstance && !audioInstance.paused) {
         audioInstance.pause();
         document.getElementById('play-voice-label').innerText = '▶️ شنیدن ویس';
@@ -359,15 +355,9 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-// ==========================================
 // موتور سوایپ
-// ==========================================
-
 let isDragging = false;
-let startX = 0;
-let startY = 0;
-let currentX = 0;
-let currentY = 0;
+let startX = 0; startY = 0; currentX = 0; currentY = 0;
 
 function initSwipeController() {
     const card = document.getElementById('user-card');
@@ -381,72 +371,51 @@ function initSwipeController() {
         if (e.target.closest('button')) return;
         isDragging = true;
         card.classList.remove('reset-card', 'swiping-left', 'swiping-right', 'swiping-up');
-        
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
-        startX = clientX;
-        startY = clientY;
+        startX = clientX; startY = clientY;
     };
 
     const onMove = (e) => {
         if (!isDragging) return;
-        
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        currentX = clientX - startX;
-        currentY = clientY - startY;
+        currentX = clientX - startX; currentY = clientY - startY;
 
         const rotate = currentX * 0.08;
         card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
 
         if (currentX > 30) {
             badgeLike.style.opacity = Math.min(currentX / 120, 1);
-            badgePass.style.opacity = 0;
-            badgeSuper.style.opacity = 0;
+            badgePass.style.opacity = 0; badgeSuper.style.opacity = 0;
         } else if (currentX < -30) {
             badgePass.style.opacity = Math.min(Math.abs(currentX) / 120, 1);
-            badgeLike.style.opacity = 0;
-            badgeSuper.style.opacity = 0;
+            badgeLike.style.opacity = 0; badgeSuper.style.opacity = 0;
         } else if (currentY < -40) {
             badgeSuper.style.opacity = Math.min(Math.abs(currentY) / 120, 1);
-            badgeLike.style.opacity = 0;
-            badgePass.style.opacity = 0;
+            badgeLike.style.opacity = 0; badgePass.style.opacity = 0;
         } else {
-            badgeLike.style.opacity = 0;
-            badgePass.style.opacity = 0;
-            badgeSuper.style.opacity = 0;
+            resetBadges();
         }
     };
 
     const onEnd = () => {
         if (!isDragging) return;
         isDragging = false;
-
-        const threshold = 100;
-        const upThreshold = -120;
-
-        if (currentX > threshold) {
-            triggerSwipe('right');
-        } else if (currentX < -threshold) {
-            triggerSwipe('left');
-        } else if (currentY < upThreshold) {
-            triggerSwipe('up');
-        } else {
+        if (currentX > 100) triggerSwipe('right');
+        else if (currentX < -100) triggerSwipe('left');
+        else if (currentY < -120) triggerSwipe('up');
+        else {
             card.style.transform = '';
             card.classList.add('reset-card');
             resetBadges();
         }
-
-        currentX = 0;
-        currentY = 0;
+        currentX = 0; currentY = 0;
     };
 
     card.addEventListener('touchstart', onStart, { passive: true });
     window.addEventListener('touchmove', onMove, { passive: true });
     window.addEventListener('touchend', onEnd);
-
     card.addEventListener('mousedown', onStart);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
@@ -461,17 +430,9 @@ function triggerSwipe(direction) {
     if (!card) return;
 
     resetBadges();
-
-    if (direction === 'right') {
-        card.classList.add('swiping-right');
-        showToast('لایک شد! ❤️');
-    } else if (direction === 'left') {
-        card.classList.add('swiping-left');
-        showToast('رد شد ✖');
-    } else if (direction === 'up') {
-        card.classList.add('swiping-up');
-        showToast('سوپر لایک ارسال شد! ⭐');
-    }
+    if (direction === 'right') { card.classList.add('swiping-right'); showToast('لایک شد! ❤️'); }
+    else if (direction === 'left') { card.classList.add('swiping-left'); showToast('رد شد ✖'); }
+    else if (direction === 'up') { card.classList.add('swiping-up'); showToast('سوپر لایک ارسال شد! ⭐'); }
 
     setTimeout(() => {
         currentCardIndex++;
@@ -482,23 +443,16 @@ function triggerSwipe(direction) {
 }
 
 function resetBadges() {
-    const badgeLike = document.getElementById('badge-like');
-    const badgePass = document.getElementById('badge-pass');
-    const badgeSuper = document.getElementById('badge-super');
-
-    if (badgeLike) badgeLike.style.opacity = 0;
-    if (badgePass) badgePass.style.opacity = 0;
-    if (badgeSuper) badgeSuper.style.opacity = 0;
+    ['badge-like', 'badge-pass', 'badge-super'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.opacity = 0;
+    });
 }
 
-// ==========================================
-// بازی دوز و جرأت حقیقت
-// ==========================================
-
+// دوز و جرأت حقیقت
 let tttBoard = Array(9).fill(null);
 let tttCurrentPlayer = '❌'; 
 let tttIsGameActive = true;
-
 const tttWinningConditions = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -506,66 +460,51 @@ const tttWinningConditions = [
 ];
 
 function initTicTacToe() {
-    const gameCard = document.getElementById('game-tictactoe-card');
-    const boardContainer = document.getElementById('tictactoe-board-container');
-    const cells = document.querySelectorAll('.ttt-cell');
-    const btnReset = document.getElementById('btn-reset-ttt');
-
-    gameCard?.addEventListener('click', () => {
-        if (boardContainer) boardContainer.classList.toggle('hidden');
+    document.getElementById('game-tictactoe-card')?.addEventListener('click', () => {
+        document.getElementById('tictactoe-board-container')?.classList.toggle('hidden');
     });
 
-    cells.forEach(cell => {
+    document.querySelectorAll('.ttt-cell').forEach(cell => {
         cell.addEventListener('click', (e) => {
             const index = parseInt(e.target.getAttribute('data-index'));
             if (tttBoard[index] !== null || !tttIsGameActive || tttCurrentPlayer !== '❌') return;
-
             makeMove(index, cell);
-            if (tttIsGameActive && tttCurrentPlayer === '⭕') {
-                setTimeout(makeAIMove, 500);
-            }
+            if (tttIsGameActive && tttCurrentPlayer === '⭕') setTimeout(makeAIMove, 500);
         });
     });
 
-    btnReset?.addEventListener('click', resetTTTGame);
+    document.getElementById('btn-reset-ttt')?.addEventListener('click', resetTTTGame);
 }
 
 function makeMove(index, cellElement) {
     tttBoard[index] = tttCurrentPlayer;
     cellElement.innerText = tttCurrentPlayer;
     cellElement.classList.add('pop-in');
-    
-    if (tttCurrentPlayer === '❌') {
-        cellElement.classList.add('text-red-500', 'drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]');
-    } else {
-        cellElement.classList.add('text-amber-400', 'drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]');
-    }
+    cellElement.classList.add(tttCurrentPlayer === '❌' ? 'text-red-500' : 'text-amber-400');
 
     const winningLine = checkTTTWinner();
     if (winningLine) {
-        highlightWinningCells(winningLine);
-        updateTTTStatus(`بازیکن ${tttCurrentPlayer} پیروز شد! 🎉`);
+        winningLine.forEach(idx => document.querySelector(`.ttt-cell[data-index="${idx}"]`)?.classList.add('winning-glow'));
+        document.getElementById('ttt-status').innerText = `بازیکن ${tttCurrentPlayer} پیروز شد! 🎉`;
         tttIsGameActive = false;
-        showToast(`بازیکن ${tttCurrentPlayer} برنده بازی شد! 🏆`);
+        showToast(`بازیکن ${tttCurrentPlayer} برنده شد! 🏆`);
         return;
     }
 
     if (tttBoard.every(cell => cell !== null)) {
-        updateTTTStatus('بازی مساوی شد! 🤝');
+        document.getElementById('ttt-status').innerText = 'بازی مساوی شد! 🤝';
         tttIsGameActive = false;
-        showToast('رقابت بدون برنده تمام شد!');
         return;
     }
 
     tttCurrentPlayer = tttCurrentPlayer === '❌' ? '⭕' : '❌';
-    updateTTTStatus(tttCurrentPlayer === '❌' ? 'نوبت شماست (❌)' : 'نوبت حریف/ربات (⭕)...');
+    document.getElementById('ttt-status').innerText = tttCurrentPlayer === '❌' ? 'نوبت شماست (❌)' : 'نوبت حریف/ربات (⭕)...';
 }
 
 function makeAIMove() {
     if (!tttIsGameActive) return;
     const emptyIndices = tttBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
     if (emptyIndices.length === 0) return;
-
     const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
     const cellElement = document.querySelector(`.ttt-cell[data-index="${randomIndex}"]`);
     if (cellElement) makeMove(randomIndex, cellElement);
@@ -579,96 +518,95 @@ function checkTTTWinner() {
     return null;
 }
 
-function highlightWinningCells(winningIndices) {
-    winningIndices.forEach(idx => {
-        const cell = document.querySelector(`.ttt-cell[data-index="${idx}"]`);
-        if (cell) cell.classList.add('winning-glow');
-    });
-}
-
-function updateTTTStatus(msg) {
-    const statusEl = document.getElementById('ttt-status');
-    if (statusEl) statusEl.innerText = msg;
-}
-
 function resetTTTGame() {
     tttBoard = Array(9).fill(null);
-    tttCurrentPlayer = '❌';
-    tttIsGameActive = true;
+    tttCurrentPlayer = '❌'; tttIsGameActive = true;
     document.querySelectorAll('.ttt-cell').forEach(cell => {
         cell.innerText = '';
         cell.className = 'ttt-cell w-full h-full bg-black/50 hover:bg-white/10 rounded-xl text-2xl font-black border border-white/10 flex items-center justify-center shadow-inner';
     });
-    updateTTTStatus('نوبت شماست (❌)');
-    showToast('بازی دوز مجدداً شروع شد 🔄');
+    document.getElementById('ttt-status').innerText = 'نوبت شماست (❌)';
 }
 
 const TRUTH_QUESTIONS = [
     "اولین چیزی که در اولین نگاه توجهت رو جلب می‌کنه چیست؟ 🤔",
-    "عجیب‌ترین یا خنده‌دارترین قولی که به کسی دادی چی بوده؟ 😂",
+    "عجیب‌ترین قولی که به کسی دادی چی بوده؟ 😂",
     "اگر فقط یک روز فرصت زندگی داشتی، اون روز رو چطور می‌گذروندی؟ ⏳"
 ];
-
 const DARE_CHALLENGES = [
     "یک ایموجی خنده‌دار یا اسپایسی انتخاب کن و توی چت بفرست! 🌶️",
-    "یک لطیفه یا خاطره خنده‌دار ۲ خطی بنویس و توی چت ارسال کن! 🤣",
-    "به طرف مقابل یک لقب اختصاصی و بامزه هدیه بده! 🏷️"
+    "یک خاطره خنده‌دار ۲ خطی بنویس و ارسال کن! 🤣",
+    "به طرف مقابل یک لقب اختصاصی هدیه بده! 🏷️"
 ];
 
 function initTruthOrDare() {
-    const todCard = document.getElementById('game-tod-card');
-    const boardContainer = document.getElementById('tod-board-container');
-    const btnTruth = document.getElementById('btn-tod-truth');
-    const btnDare = document.getElementById('btn-tod-dare');
-
-    todCard?.addEventListener('click', () => {
-        if (boardContainer) boardContainer.classList.toggle('hidden');
+    document.getElementById('game-tod-card')?.addEventListener('click', () => {
+        document.getElementById('tod-board-container')?.classList.toggle('hidden');
     });
 
-    btnTruth?.addEventListener('click', () => getNextTOD('truth'));
-    btnDare?.addEventListener('click', () => getNextTOD('dare'));
+    document.getElementById('btn-tod-truth')?.addEventListener('click', () => getNextTOD('truth'));
+    document.getElementById('btn-tod-dare')?.addEventListener('click', () => getNextTOD('dare'));
 }
 
 function getNextTOD(type) {
-    const displayCard = document.getElementById('tod-display-card');
     const badgeEl = document.getElementById('tod-badge');
     const textEl = document.getElementById('tod-text');
-
-    if (!displayCard || !badgeEl || !textEl) return;
-
-    displayCard.classList.remove('tod-card-flip');
-    void displayCard.offsetWidth;
-
     if (type === 'truth') {
-        const randomTruth = TRUTH_QUESTIONS[Math.floor(Math.random() * TRUTH_QUESTIONS.length)];
         badgeEl.innerText = '🤔 حقیقت (Truth)';
         badgeEl.className = 'text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full mb-1.5 font-bold';
-        textEl.innerText = randomTruth;
+        textEl.innerText = TRUTH_QUESTIONS[Math.floor(Math.random() * TRUTH_QUESTIONS.length)];
     } else {
-        const randomDare = DARE_CHALLENGES[Math.floor(Math.random() * DARE_CHALLENGES.length)];
         badgeEl.innerText = '🔥 جرأت (Dare)';
         badgeEl.className = 'text-[9px] bg-pink-500/20 text-pink-400 border border-pink-500/30 px-2.5 py-0.5 rounded-full mb-1.5 font-bold';
-        textEl.innerText = randomDare;
+        textEl.innerText = DARE_CHALLENGES[Math.floor(Math.random() * DARE_CHALLENGES.length)];
     }
-
-    displayCard.classList.add('tod-card-flip');
 }
 
-// Event Listeners
+// مدیریت پرداخت VIP
+function initVipCheckout() {
+    const btnOpenVip = document.getElementById('btn-buy-vip');
+    const vipModal = document.getElementById('vip-modal');
+    const btnCloseVip = document.getElementById('btn-close-vip-modal');
+    const btnConfirm = document.getElementById('btn-confirm-vip-purchase');
+
+    btnOpenVip?.addEventListener('click', () => vipModal?.classList.remove('hidden'));
+    btnCloseVip?.addEventListener('click', () => vipModal?.classList.add('hidden'));
+
+    document.querySelectorAll('.vip-card-option').forEach(option => {
+        option.addEventListener('click', () => {
+            document.querySelectorAll('.vip-card-option').forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+        });
+    });
+
+    btnConfirm?.addEventListener('click', () => {
+        const selectedOption = document.querySelector('.vip-card-option.selected');
+        const stars = selectedOption ? selectedOption.getAttribute('data-stars') : '50';
+
+        // ارتقا به VIP
+        profile.isVip = true;
+        saveProfile();
+        renderUI();
+
+        vipModal?.classList.add('hidden');
+        showToast(`موفقیت‌آمیز بود! ${stars} ⭐️ کسر شد و VIP شدید 👑`);
+    });
+}
+
+// Event Listeners اصلی
 document.addEventListener('DOMContentLoaded', () => {
     renderUI();
     initSwipeController();
     initTicTacToe();
     initTruthOrDare();
+    initVipCheckout();
 
-    // سوئیچ مخاطب چت
     document.getElementById('btn-switch-match')?.addEventListener('click', () => {
         activeMatchIndex = (activeMatchIndex + 1) % MATCHES.length;
         renderChatMessages();
         showToast(`مخاطب تغییر کرد: ${MATCHES[activeMatchIndex].name} 💬`);
     });
 
-    // ارسال پیام چت
     document.getElementById('btn-send-chat')?.addEventListener('click', sendChatMessage);
     document.getElementById('input-chat-msg')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendChatMessage();
