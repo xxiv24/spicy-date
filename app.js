@@ -1,5 +1,5 @@
 // ==========================================
-// Spicy Date 🌶️ - Full Functional Logic
+// Spicy Date 🌶️ - Full Functional Logic (Fixed)
 // ==========================================
 
 const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
@@ -124,7 +124,6 @@ function saveProfile() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
-// تاریخچه چت
 function loadChatHistory() {
     const defaultChat = {
         1: [{ sender: 'other', text: 'سلام! وقتت بخیر کافه بریم؟ ☕', time: '14:20' }],
@@ -302,6 +301,10 @@ function togglePlayAudio() {
     }
 }
 
+function playCardVoiceDemo() {
+    showToast('در حال پخش صدای ۱۲ ثانیه‌ای کاربر 🎙️');
+}
+
 function renderInterestsSelector() {
     const container = document.getElementById('interests-selector');
     if (!container) return;
@@ -449,7 +452,7 @@ function resetBadges() {
     });
 }
 
-// دوز و جرأت حقیقت
+// دوز
 let tttBoard = Array(9).fill(null);
 let tttCurrentPlayer = '❌'; 
 let tttIsGameActive = true;
@@ -528,6 +531,7 @@ function resetTTTGame() {
     document.getElementById('ttt-status').innerText = 'نوبت شماست (❌)';
 }
 
+// جرأت و حقیقت
 const TRUTH_QUESTIONS = [
     "اولین چیزی که در اولین نگاه توجهت رو جلب می‌کنه چیست؟ 🤔",
     "عجیب‌ترین قولی که به کسی دادی چی بوده؟ 😂",
@@ -562,7 +566,7 @@ function getNextTOD(type) {
     }
 }
 
-// --- سنگ، کاغذ، قیچی ---
+// سنگ، کاغذ، قیچی
 const RPS_CHOICES = [
     { name: 'rock', label: 'سنگ 🪨' },
     { name: 'paper', label: 'کاغذ 📄' },
@@ -610,7 +614,7 @@ function playRPS(playerChoice) {
     detailsEl.innerText = `انتخاب شما: ${getLabel(playerChoice)} | انتخاب حریف: ${getLabel(aiChoice)}`;
 }
 
-// --- گردونه شانس اسپایسی ---
+// گردونه شانس
 const WHEEL_REWARDS = [
     "👑 ۱ روز VIP رایگان",
     "⭐ ۱۰ سوپرلایک",
@@ -658,7 +662,7 @@ function spinWheel() {
     }, 4000);
 }
 
-// مدیریت پرداخت VIP
+// VIP Checkout
 function initVipCheckout() {
     const btnOpenVip = document.getElementById('btn-buy-vip');
     const vipModal = document.getElementById('vip-modal');
@@ -679,7 +683,6 @@ function initVipCheckout() {
         const selectedOption = document.querySelector('.vip-card-option.selected');
         const stars = selectedOption ? selectedOption.getAttribute('data-stars') : '50';
 
-        // ارتقا به VIP
         profile.isVip = true;
         saveProfile();
         renderUI();
@@ -736,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-play-voice')?.addEventListener('click', togglePlayAudio);
-    document.getElementById('btn-card-play-voice')?.addEventListener('click', togglePlayAudio);
+    document.getElementById('btn-card-play-voice')?.addEventListener('click', playCardVoiceDemo);
 
     const bioInput = document.getElementById('input-edit-bio');
     bioInput?.addEventListener('input', (e) => {
