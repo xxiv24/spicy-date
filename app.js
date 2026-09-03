@@ -562,6 +562,102 @@ function getNextTOD(type) {
     }
 }
 
+// --- سنگ، کاغذ، قیچی ---
+const RPS_CHOICES = [
+    { name: 'rock', label: 'سنگ 🪨' },
+    { name: 'paper', label: 'کاغذ 📄' },
+    { name: 'scissors', label: 'قیچی ✂️' }
+];
+
+function initRockPaperScissors() {
+    document.getElementById('game-rps-card')?.addEventListener('click', () => {
+        document.getElementById('rps-board-container')?.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('.btn-rps-choice').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const playerChoice = e.currentTarget.getAttribute('data-choice');
+            playRPS(playerChoice);
+        });
+    });
+}
+
+function playRPS(playerChoice) {
+    const aiChoiceObj = RPS_CHOICES[Math.floor(Math.random() * RPS_CHOICES.length)];
+    const aiChoice = aiChoiceObj.name;
+
+    const resultTextEl = document.getElementById('rps-result-text');
+    const detailsEl = document.getElementById('rps-details');
+
+    const getLabel = (name) => RPS_CHOICES.find(c => c.name === name).label;
+
+    if (playerChoice === aiChoice) {
+        resultTextEl.innerText = 'نتیجه: مساوی شد! 🤝';
+        resultTextEl.className = 'text-xs font-bold text-amber-400';
+    } else if (
+        (playerChoice === 'rock' && aiChoice === 'scissors') ||
+        (playerChoice === 'paper' && aiChoice === 'rock') ||
+        (playerChoice === 'scissors' && aiChoice === 'paper')
+    ) {
+        resultTextEl.innerText = 'شما برنده شدید! 🎉';
+        resultTextEl.className = 'text-xs font-bold text-green-400';
+        showToast('آفرین! شما برنده شدید 🏆');
+    } else {
+        resultTextEl.innerText = 'حریف برنده شد! ❌';
+        resultTextEl.className = 'text-xs font-bold text-red-400';
+    }
+
+    detailsEl.innerText = `انتخاب شما: ${getLabel(playerChoice)} | انتخاب حریف: ${getLabel(aiChoice)}`;
+}
+
+// --- گردونه شانس اسپایسی ---
+const WHEEL_REWARDS = [
+    "👑 ۱ روز VIP رایگان",
+    "⭐ ۱۰ سوپرلایک",
+    "🌶️ لقب ویژه اسپایسی",
+    "❌ پوچ (تلاش مجدد)",
+    "⭐️ ۵ استارز هدیه",
+    "💬 پیام ناشناس رایگان"
+];
+
+let isSpinning = false;
+let currentRotation = 0;
+
+function initWheelOfFortune() {
+    document.getElementById('game-wheel-card')?.addEventListener('click', () => {
+        document.getElementById('wheel-board-container')?.classList.toggle('hidden');
+    });
+
+    document.getElementById('btn-spin-wheel')?.addEventListener('click', spinWheel);
+}
+
+function spinWheel() {
+    if (isSpinning) return;
+    isSpinning = true;
+
+    const wheelDiv = document.getElementById('wheel-spinner');
+    const rewardTextEl = document.getElementById('wheel-result-text');
+
+    const randomDegree = Math.floor(Math.random() * 360);
+    const totalRotation = currentRotation + 1800 + randomDegree;
+    currentRotation = totalRotation;
+
+    wheelDiv.style.transform = `rotate(${totalRotation}deg)`;
+
+    rewardTextEl.innerText = 'در حال چرخش گردونه... 🎰';
+
+    setTimeout(() => {
+        isSpinning = false;
+        
+        const normalizedDegree = (360 - (totalRotation % 360)) % 360;
+        const rewardIndex = Math.floor(normalizedDegree / (360 / WHEEL_REWARDS.length));
+        const wonReward = WHEEL_REWARDS[rewardIndex];
+
+        rewardTextEl.innerText = `تبریک! جایزه شما: ${wonReward}`;
+        showToast(`جایزه دریافت شد: ${wonReward}`);
+    }, 4000);
+}
+
 // مدیریت پرداخت VIP
 function initVipCheckout() {
     const btnOpenVip = document.getElementById('btn-buy-vip');
@@ -599,6 +695,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initSwipeController();
     initTicTacToe();
     initTruthOrDare();
+    initRockPaperScissors();
+    initWheelOfFortune();
     initVipCheckout();
 
     document.getElementById('btn-switch-match')?.addEventListener('click', () => {
