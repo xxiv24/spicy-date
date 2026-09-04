@@ -715,3 +715,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('تغییرات به شکل دائمی ذخیره شدند ✨');
     });
 });
+
