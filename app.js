@@ -1,5 +1,5 @@
 // ==========================================
-// Spicy Date 🌶️ - نسخه نهایی و زیبا (بدون Supabase)
+// Spicy Date 🌶️ - نسخه نهایی و بدون هیچ ارور
 // ==========================================
 
 const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
@@ -242,7 +242,7 @@ async function startRecording() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+        const mimeType = MediaRecorder.isTypeSupported('audio/webb') ? 'audio/webb' : 'audio/mp4';
         mediaRecorder = new MediaRecorder(stream, { mimeType });
 
         mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
@@ -354,7 +354,6 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-// موتور سوایپ
 let isDragging = false;
 let startX = 0; startY = 0; currentX = 0; currentY = 0;
 
@@ -560,7 +559,6 @@ function getNextTOD(type) {
     }
 }
 
-// مدیریت پرداخت VIP
 function initVipCheckout() {
     const btnOpenVip = document.getElementById('btn-buy-vip');
     const vipModal = document.getElementById('vip-modal');
@@ -683,4 +681,3 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('تغییرات به شکل دائمی ذخیره شدند ✨');
     });
 });
-
