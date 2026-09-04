@@ -1,12 +1,9 @@
 // ==========================================
-// Spicy Date 🌶️ - Full Functional Logic (با Supabase واقعی)
+// Spicy Date 🌶️ - نسخه نهایی و زیبا (بدون Supabase)
 // ==========================================
 
 const STORAGE_KEY = 'spicy_user_profile_permanent_v1';
 const CHAT_STORAGE_KEY = 'spicy_user_chats_history_v1';
-const PROFILES_DB = 'profiles';
-const LIKES_DB = 'user_likes';
-const CHATS_DB = 'user_chats';
 
 const IRAN_CITIES = [
     "تهران", "مشهد", "اصفهان", "کرج", "شیراز", "تبریز", "قم", "اهواز", 
@@ -44,6 +41,8 @@ const MATCHES = [
         ]
     }
 ];
+
+let activeMatchIndex = 0;
 
 const EXPLORE_USERS = [
     {
@@ -84,33 +83,12 @@ const EXPLORE_USERS = [
     }
 ];
 
-let activeMatchIndex = 0;
 let currentCardIndex = 0;
-let profile = null;
-let tempInterests = [];
-let mediaRecorder = null;
-let audioChunks = [];
-let audioInstance = null;
-let recordTimerInterval = null;
-let recordSecondsLeft = 15;
-let chatHistory = {};
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
     tg.ready();
     tg.expand();
-}
-
-// ==================== SUPABASE CONFIG (دقیقاً دست خودم) ====================
-const supabase = window.Supabase?.createClient(
-    'https://hwdxrwctzuqkyjpvlyxt.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3ZHhydndjdHVxa3lqbnBseXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0MDQ3OTEsImV4cCI6MjA4MTk4MDc5MX0.7L3R6S8fZ5v8h7k9pQ2wX8yV9tZ4bR6sT7vU8xY9zA0'
-);
-
-async function fetchSupabase() {
-    if (supabase) {
-        await supabase.from(PROFILES_DB).select('*').limit(1);
-    }
 }
 
 function loadProfile() {
@@ -133,39 +111,115 @@ function loadProfile() {
     return defaultData;
 }
 
-async function saveProfile() {
-    if (supabase) {
-        const user = tg?.initDataUnsafe?.user;
-        if (user) {
-            await supabase.from(PROFILES_DB).upsert({
-                telegram_id: user.id,
-                name: profile.name,
-                age: profile.age,
-                gender: profile.gender,
-                city: profile.city,
-                bio: profile.bio,
-                isVip: profile.isVip,
-                interests: profile.interests,
-                audio_base64: profile.audioBase64,
-                updated_at: new Date().toISOString()
-            });
-        }
-    }
+let profile = loadProfile();
+let tempInterests = [...profile.interests];
+
+let mediaRecorder = null;
+let audioChunks = [];
+let audioInstance = null;
+let recordTimerInterval = null;
+let recordSecondsLeft = 15;
+
+function saveProfile() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
-async function loadProfileFromSupabase() {
-    const user = tg?.initDataUnsafe?.user;
-    if (!user || !supabase) return null;
+function loadChatHistory() {
+    const defaultChat = {
+        1: [{ sender: 'other', text: 'سلام! وقتت بخیر کافه بریم؟ ☕', time: '14:20' }],
+        2: [{ sender: 'other', text: 'سلام چطوری؟ 🌿', time: '12:00' }]
+    };
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (saved) {
+        try { return JSON.parse(saved); } catch (e) { return defaultChat; }
+    }
+    return defaultChat;
+}
 
-    const { data, error } = await supabase
-        .from(PROFILES_DB)
-        .select('*')
-        .eq('telegram_id', user.id)
-        .single();
+let chatHistory = loadChatHistory();
 
-    if (error || !data) return null;
-    return data;
+function saveChatHistory() {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+}
+
+function renderChatMessages() {
+    const currentMatch = MATCHES[activeMatchIndex];
+    document.getElementById('chat-active-name').innerText = currentMatch.name;
+    document.getElementById('chat-active-avatar').src = currentMatch.image;
+
+    const listContainer = document.getElementById('chat-messages-list');
+    const messages = chatHistory[currentMatch.id] || [];
+
+    if (messages.length === 0) {
+        listContainer.innerHTML = `<div class="text-center text-xs text-gray-500 py-8">هنوز پیامی رد و بدل نشده است 👋</div>`;
+        return;
+    }
+
+    listContainer.innerHTML = messages.map(msg => {
+        const isMe = msg.sender === 'me';
+        return `
+            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'} px-3.5 py-2 max-w-[80%] text-xs text-white shadow-md">
+                    ${msg.text}
+                </div>
+                <span class="text-[8px] text-gray-500 mt-0.5 px-1 font-mono">${msg.time}</span>
+            </div>
+        `;
+    }).join('');
+
+    listContainer.scrollTop = listContainer.scrollHeight;
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('input-chat-msg');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const currentMatch = MATCHES[activeMatchIndex];
+    if (!chatHistory[currentMatch.id]) chatHistory[currentMatch.id] = [];
+
+    const now = new Date();
+    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
+
+    chatHistory[currentMatch.id].push({ sender: 'me', text, time: timeStr });
+    input.value = '';
+    saveChatHistory();
+    renderChatMessages();
+
+    setTimeout(() => {
+        const replies = currentMatch.replies;
+        const randomReply = replies[Math.floor(Math.random() * replies.length)];
+        
+        chatHistory[currentMatch.id].push({ sender: 'other', text: randomReply, time: timeStr });
+        saveChatHistory();
+        renderChatMessages();
+    }, 1500);
+}
+
+function renderUI() {
+    document.getElementById('profile-img').src = profile.image;
+    document.getElementById('profile-name-age').innerText = `${profile.name}، ${profile.age}`;
+    document.getElementById('profile-city').innerText = `📍 ${profile.city}`;
+    document.getElementById('profile-gender').innerText = `| ${profile.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
+    document.getElementById('profile-bio').innerText = profile.bio || "بدون بیوگرافی";
+    
+    const vipBadge = document.getElementById('profile-vip-badge');
+    if (vipBadge) {
+        if (profile.isVip) {
+            vipBadge.innerText = '👑 کاربر VIP اسپایسی';
+            vipBadge.className = 'inline-block text-[9px] bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black px-2.5 py-0.5 rounded-full shadow-md';
+        } else {
+            vipBadge.innerText = 'اشتراک معمولی';
+            vipBadge.className = 'inline-block text-[9px] bg-gray-800 text-gray-300 px-2.5 py-0.5 rounded-full border border-white/10';
+        }
+    }
+
+    document.getElementById('profile-interests').innerHTML = profile.interests.map(t => 
+        `<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">${t}</span>`
+    ).join('');
+
+    renderCurrentExploreCard();
+    renderChatMessages();
 }
 
 function renderCurrentExploreCard() {
@@ -277,6 +331,22 @@ function renderInterestsSelector() {
     });
 }
 
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`)?.classList.add('active');
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-red-500', 'active');
+        btn.classList.add('text-gray-400');
+    });
+
+    const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-gray-400');
+        activeBtn.classList.add('text-red-500', 'active');
+    }
+}
+
 function showToast(msg) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-message').innerText = msg;
@@ -284,6 +354,7 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
+// موتور سوایپ
 let isDragging = false;
 let startX = 0; startY = 0; currentX = 0; currentY = 0;
 
@@ -489,6 +560,7 @@ function getNextTOD(type) {
     }
 }
 
+// مدیریت پرداخت VIP
 function initVipCheckout() {
     const btnOpenVip = document.getElementById('btn-buy-vip');
     const vipModal = document.getElementById('vip-modal');
@@ -518,113 +590,7 @@ function initVipCheckout() {
     });
 }
 
-function renderUI() {
-    document.getElementById('profile-img').src = profile.image;
-    document.getElementById('profile-name-age').innerText = `${profile.name}، ${profile.age}`;
-    document.getElementById('profile-city').innerText = `📍 ${profile.city}`;
-    document.getElementById('profile-gender').innerText = `| ${profile.gender === 'مرد' ? '♂️ مرد' : '♀️ زن'}`;
-    document.getElementById('profile-bio').innerText = profile.bio || "بدون بیوگرافی";
-    
-    const vipBadge = document.getElementById('profile-vip-badge');
-    if (vipBadge) {
-        if (profile.isVip) {
-            vipBadge.innerText = '👑 کاربر VIP اسپایسی';
-            vipBadge.className = 'inline-block text-[9px] bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black px-2.5 py-0.5 rounded-full shadow-md';
-        } else {
-            vipBadge.innerText = 'اشتراک معمولی';
-            vipBadge.className = 'inline-block text-[9px] bg-gray-800 text-gray-300 px-2.5 py-0.5 rounded-full border border-white/10';
-        }
-    }
-
-    document.getElementById('profile-interests').innerHTML = profile.interests.map(t => 
-        `<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full border border-red-500/20">${t}</span>`
-    ).join('');
-
-    renderCurrentExploreCard();
-    renderChatMessages();
-}
-
-function renderChatMessages() {
-    const currentMatch = MATCHES[activeMatchIndex];
-    document.getElementById('chat-active-name').innerText = currentMatch.name;
-    document.getElementById('chat-active-avatar').src = currentMatch.image;
-
-    const listContainer = document.getElementById('chat-messages-list');
-    const messages = chatHistory[currentMatch.id] || [];
-
-    if (messages.length === 0) {
-        listContainer.innerHTML = `<div class="text-center text-xs text-gray-500 py-8">هنوز پیامی رد و بدل نشده است 👋</div>`;
-        return;
-    }
-
-    listContainer.innerHTML = messages.map(msg => {
-        const isMe = msg.sender === 'me';
-        return `
-            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                <div class="${isMe ? 'chat-bubble-me' : 'chat-bubble-other'} px-3.5 py-2 max-w-[80%] text-xs text-white shadow-md">
-                    ${msg.text}
-                </div>
-                <span class="text-[8px] text-gray-500 mt-0.5 px-1 font-mono">${msg.time}</span>
-            </div>
-        `;
-    }).join('');
-
-    listContainer.scrollTop = listContainer.scrollHeight;
-}
-
-function sendChatMessage() {
-    const input = document.getElementById('input-chat-msg');
-    const text = input.value.trim();
-    if (!text) return;
-
-    const currentMatch = MATCHES[activeMatchIndex];
-    if (!chatHistory[currentMatch.id]) chatHistory[currentMatch.id] = [];
-
-    const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0' : ''}${now.getMinutes()}`;
-
-    chatHistory[currentMatch.id].push({ sender: 'me', text, time: timeStr });
-    input.value = '';
-    saveChatHistory();
-    renderChatMessages();
-
-    setTimeout(() => {
-        const replies = currentMatch.replies;
-        const randomReply = replies[Math.floor(Math.random() * replies.length)];
-        
-        chatHistory[currentMatch.id].push({ sender: 'other', text: randomReply, time: timeStr });
-        saveChatHistory();
-        renderChatMessages();
-    }, 1500);
-}
-
-function saveChatHistory() {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
-}
-
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`)?.classList.add('active');
-
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-red-500', 'active');
-        btn.classList.add('text-gray-400');
-    });
-
-    const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabName}"]`);
-    if (activeBtn) {
-        activeBtn.classList.remove('text-gray-400');
-        activeBtn.classList.add('text-red-500', 'active');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await fetchSupabase();
-    profile = await loadProfileFromSupabase() || loadProfile();
-
-    if (!profile.interests) profile.interests = ["🎧 موسیقی", "🎮 گیمینگ", "☕ کافه‌گردی"];
-    tempInterests = [...profile.interests];
-
+document.addEventListener('DOMContentLoaded', () => {
     renderUI();
     initSwipeController();
     initTicTacToe();
@@ -645,6 +611,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
+
+    document.getElementById('btn-back-header')?.addEventListener('click', () => switchTab('explore'));
 
     document.getElementById('direct-avatar-upload')?.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -715,4 +683,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('تغییرات به شکل دائمی ذخیره شدند ✨');
     });
 });
-
