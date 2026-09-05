@@ -4,217 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spicy Date 🌶️</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { background: #0f0c20; font-family: system-ui, -apple-system, sans-serif; touch-action: manipulation; }
-        .spicy-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 32px rgba(255, 59, 92, 0.1); }
-        .btn-spicy { background: linear-gradient(45deg, #ff3b5c, #ff6b00); box-shadow: 0 4px 20px rgba(255, 59, 92, 0.4); transition: all 0.3s ease; }
-        .btn-spicy:active { transform: scale(0.95); }
-        .btn-super-spicy { background: linear-gradient(45deg, #a855f7, #ff3b5c); box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4); }
-        .tab-content { display: none; }
-        .tab-content.active { display: flex; }
-        .action-btn { transition: all 0.2s ease; }
-        .action-btn:active { transform: scale(0.85); }
-        
+        :root {
+            --bg-dark: #0f0a1c;
+            --bg-card: #1d1235;
+            --primary-red: #ff2a5f;
+            --accent-gold: #ffd700;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .spicy-bg {
+            background: radial-gradient(circle at top, #2a0835 0%, var(--bg-dark) 100%);
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(255, 42, 95, 0.2);
+        }
+
+        .action-btn {
+            transition: transform 0.1s active, background-color 0.2s;
+        }
+        .action-btn:active {
+            transform: scale(0.92);
+        }
+
+        .recording-pulse {
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 42, 95, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 42, 95, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 42, 95, 0); }
+        }
+
+        .swipe-transition {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        /* VIP Badge Glow */
+        .vip-glow {
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            border: 1px solid var(--accent-gold);
+        }
+
+        /* Toast Popup */
         #toast {
-            transform: translateY(-100%);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
-        #toast.show { transform: translateY(0); }
-
-        .tag-chip.selected {
-            background: rgba(255, 59, 92, 0.3);
-            border-color: #ff3b5c;
-            color: #fff;
-        }
-
-        .tictactoe-cell {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            font-weight: 900;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .tictactoe-cell:hover { background: rgba(255, 59, 92, 0.2); }
-        .tictactoe-cell.disabled { pointer-events: none; }
-
-        .loader { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .error-text { color: #ff6b7a; font-size: 11px; }
-        .success-text { color: #4ade80; }
-
-        nav button.active { color: #ff3b5c !important; }
     </style>
 </head>
-<body class="text-white min-h-screen flex flex-col justify-between select-none pb-16 overflow-hidden">
+<body class="spicy-bg flex flex-col justify-between w-full overflow-hidden">
 
-    <!-- سیستم اعلانات داخل برنامه (Toast) -->
-    <div id="toast" class="fixed top-3 left-4 right-4 z-50 p-3 spicy-card rounded-2xl flex items-center gap-3 shadow-2xl border border-red-500/30">
-        <span id="toast-icon" class="text-xl">🌶️</span>
-        <p id="toast-message" class="text-xs font-bold text-gray-200">پیام سیستم</p>
-    </div>
-
-    <!-- لودینگ صفحات -->
-    <div id="page-loader" class="fixed inset-0 bg-[#0f0c20]/90 z-40 hidden items-center justify-center backdrop-blur-md">
-        <div class="flex flex-col items-center gap-3">
-            <div class="w-10 h-10 border-4 border-red-500/20 border-t-red-500 rounded-full loader"></div>
-            <span class="text-xs text-red-400 font-bold">در حال بارگذاری...</span>
+    <!-- Header Navigation -->
+    <header class="flex justify-between items-center p-4 border-b border-purple-900/40 bg-opacity-50 backdrop-blur-md">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🌶️</span>
+            <h1 class="text-xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-amber-400">Spicy Date</h1>
         </div>
-    </div>
-
-    <!-- صفحه ورود و آنبوردینگ -->
-    <div id="login-screen" class="fixed inset-0 bg-[#0f0c20] z-50 flex flex-col justify-between p-6 overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-64 h-64 bg-red-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-        <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="relative z-10 text-center mt-6 space-y-2">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl spicy-card border border-red-500/30 shadow-[0_0_30px_rgba(255,59,92,0.3)] mb-1">
-                <span class="text-4xl animate-bounce">🌶️</span>
-            </div>
-            <h1 class="text-3xl font-black tracking-widest bg-gradient-to-r from-red-500 via-orange-400 to-amber-300 bg-clip-text text-transparent">
-                SPICY DATE
-            </h1>
-            <p class="text-[11px] text-gray-400">جامعه دوست‌یابی مدرن تلگرام</p>
-        </div>
-
-        <div class="relative z-10 spicy-card rounded-3xl p-6 border border-white/10 shadow-2xl space-y-4 my-auto backdrop-blur-2xl">
-            <div class="text-center space-y-1">
-                <h2 class="text-base font-bold text-white">ورود هوشمند 🚀</h2>
-                <p class="text-[11px] text-gray-400">احراز هویت مستقیم با اکانت تلگرام</p>
-            </div>
-
-            <button id="btn-telegram-login" class="w-full py-4 btn-spicy text-white font-black text-xs rounded-2xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
-                <span>ورود به عنوان کاربر تلگرام</span>
-                <span>⚡</span>
+        <div class="flex items-center gap-3">
+            <button id="btn-open-vip" class="flex items-center gap-1 bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-full text-xs font-bold vip-glow">
+                <span>👑</span>
+                <span>ارتقا به VIP</span>
             </button>
-
-            <button id="btn-open-register" class="w-full py-3 bg-white/5 border border-white/10 text-gray-300 font-bold rounded-2xl text-xs active:scale-95 transition">
-                تکمیل / ویرایش پروفایل ✍️
-            </button>
-
-            <p class="text-error-text text-center" id="login-error"></p>
+            <div id="user-vip-status" class="hidden text-xs bg-red-600 px-2 py-1 rounded font-bold">VIP</div>
         </div>
-
-        <div class="relative z-10 text-center pb-2">
-            <p class="text-[10px] text-gray-500">ورود شما به منزله پذیرش قوانین برنامه است.</p>
-        </div>
-    </div>
-
-    <!-- مودال ساخت پروفایل -->
-    <div id="register-modal" class="fixed inset-0 bg-[#0f0c20] z-50 p-6 flex flex-col justify-between overflow-y-auto hidden fade-in">
-        <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-white/10 pb-3">
-                <h1 class="text-base font-black text-red-500">تکمیل پروفایل اسپایسی 🌶️</h1>
-                <button id="btn-close-register" class="text-gray-400 text-sm hover:text-white">✕</button>
-            </div>
-            
-            <div class="space-y-3">
-                <div>
-                    <input type="text" id="reg-name" placeholder="نام / مستعار" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500">
-                    <p class="error-text" id="name-error"></p>
-                </div>
-                
-                <div class="flex gap-2">
-                    <div class="w-1/2">
-                        <input type="number" id="reg-age" placeholder="سن" min="18" max="100" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500">
-                        <p class="error-text" id="age-error"></p>
-                    </div>
-                    <div class="w-1/2">
-                        <input type="text" id="reg-city" placeholder="شهر" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none focus:border-red-500">
-                        <p class="error-text" id="city-error"></p>
-                    </div>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-[11px] text-amber-300 font-bold block">انتخاب ۳ علاقه‌مندی:</label>
-                    <div class="flex flex-wrap gap-1.5 pt-1 max-h-36 overflow-y-auto p-1">
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">☕ کافه‌گردی</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">🎮 گیمینگ</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">🎧 موسیقی</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">🎬 فیلم و سریال</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">⚽ ورزش</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">✈️ سفر</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">📚 مطالعه</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">🎨 هنر و طراحی</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">🍕 آشپزی</button>
-                        <button type="button" class="tag-chip border border-white/10 bg-white/5 px-2.5 py-1 rounded-lg text-[11px] text-gray-300">💻 تکنولوژی</button>
-                    </div>
-                    <p class="error-text" id="interest-error"></p>
-                </div>
-
-                <div class="spicy-card p-3 rounded-2xl text-center space-y-2">
-                    <label class="text-[11px] text-red-400 font-bold block">🎙️ ضبط Spicy Voice (۱۵ ثانیه)</label>
-                    <button type="button" id="record-btn" class="w-full py-2 bg-red-500/20 border border-red-500/40 text-red-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2">
-                        <span id="rec-icon">🔴</span> <span id="rec-text">شروع ضبط</span>
-                    </button>
-                    <p class="text-[10px] text-gray-400">فایل صدایی: <span id="voice-status">هنوز ضبط نشده</span></p>
-                </div>
-            </div>
-        </div>
-
-        <button id="btn-save-profile" class="w-full py-3.5 btn-spicy text-white font-bold rounded-xl text-xs shadow-lg active:scale-95 my-2">
-            ذخیره و ورود به برنامه 🔥
-        </button>
-    </div>
-
-    <!-- هدر بالای برنامه -->
-    <header class="p-3 flex justify-between items-center spicy-card rounded-b-2xl mx-2 mt-1 fixed top-0 left-0 right-0 z-20">
-        <h1 class="text-lg font-black text-red-500 tracking-wider">SPICY DATE 🌶️</h1>
-        <button id="btn-upgrade-vip" class="bg-amber-400/10 border border-amber-400/40 text-amber-300 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-amber-400/20 transition">
-            <span>⭐</span> <span id="vip-status">ارتقا</span>
-        </button>
     </header>
 
-    <!-- صفحه اصلی (Main Feed) -->
-    <main id="tab-feed" class="tab-content active flex-1 flex-col items-center justify-center p-4 mt-12">
-        <div id="user-card" class="w-full max-w-sm h-[420px] spicy-card rounded-3xl overflow-hidden relative shadow-2xl flex flex-col justify-end p-5 transition-transform duration-300 fade-in">
-            <img id="card-img" src="" class="absolute inset-0 w-full h-full object-cover -z-10 brightness-75">
+    <!-- Main Dynamic Content Container -->
+    <main class="flex-1 relative flex flex-col items-center justify-center p-4 overflow-hidden">
+        
+        <!-- User Card View (Dating Deck) -->
+        <div id="deck-container" class="w-full max-w-sm h-full max-h-[520px] relative flex flex-col items-center justify-center">
             
-            <div id="vip-badge" class="absolute top-4 right-4 bg-amber-400/90 text-black px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1 shadow-lg backdrop-blur-md border border-amber-300 hidden">
-                <span>⭐</span> <span>کاربر ویژه</span>
-            </div>
-
-            <div class="space-y-2">
-                <div class="flex items-baseline gap-2">
-                    <h2 id="card-name" class="text-2xl font-bold">نام، سن</h2>
-                    <span id="card-location" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30 font-bold">📍 شهر</span>
-                </div>
+            <!-- User Profile Card -->
+            <div id="user-card" class="w-full h-full bg-[#1d1235] rounded-3xl border border-purple-800/40 overflow-hidden flex flex-col justify-between relative card-shadow transition-transform">
                 
-                <div id="card-interests" class="flex gap-1 flex-wrap">
-                    <!-- اضافه شده به طور دینامیک -->
+                <!-- Avatar & Image Placeholder -->
+                <div class="relative w-full h-2/3 bg-purple-950 flex items-center justify-center overflow-hidden">
+                    <img id="card-avatar" src="https://via.placeholder.com/400x500/2a0835/ffffff?text=Spicy+Profile" alt="User Avatar" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#1d1235] via-transparent to-transparent"></div>
+                    
+                    <!-- Voice Preview Player Button -->
+                    <button id="btn-play-voice" class="absolute bottom-3 right-3 bg-red-600 hover:bg-red-500 text-white rounded-full p-3 shadow-lg flex items-center gap-2 backdrop-blur-sm bg-opacity-90 transition">
+                        <span id="voice-icon">🔊</span>
+                        <span class="text-xs font-bold pl-1">ویس ۱۲ ثانیه‌ای</span>
+                    </button>
+                    
+                    <!-- Distance Badge -->
+                    <span id="card-distance" class="absolute top-3 right-3 bg-black/60 text-gray-300 text-xs px-2.5 py-1 rounded-full backdrop-blur-md">📍 نزدیک شما</span>
                 </div>
 
-                <div class="bg-black/50 border border-white/10 p-2 rounded-2xl flex items-center justify-between backdrop-blur-md">
-                    <div class="flex items-center gap-2">
-                        <button id="btn-play-voice" class="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-xs text-white hover:bg-red-600">▶</button>
-                        <span class="text-xs font-bold text-gray-200">Spicy Voice 🎙️</span>
+                <!-- Info Box -->
+                <div class="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <h2 id="card-name-age" class="text-xl font-bold text-white">سارا، ۲۴</h2>
+                            <span id="card-badge" class="text-xs bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded">آنلاین</span>
+                        </div>
+                        <p id="card-bio" class="text-xs text-gray-400 mt-1 line-clamp-2">علاقه‌مند به موزیک، سفر و چالش‌های هیجان‌انگیز! 🎧✨</p>
+                    </div>
+
+                    <!-- Swipe Action Controls -->
+                    <div class="flex justify-around items-center pt-2">
+                        <button id="btn-dislike" class="action-btn w-12 h-12 bg-gray-800 border border-gray-700 text-red-500 rounded-full flex items-center justify-center text-xl shadow-md">❌</button>
+                        <button id="btn-superlike" class="action-btn w-10 h-10 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-full flex items-center justify-center text-lg shadow-md">⭐</button>
+                        <button id="btn-like" class="action-btn w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center text-xl shadow-lg">❤️</button>
                     </div>
                 </div>
+
+            </div>
+
+        </div>
+
+        <!-- Voice Recorder Modal Section (For Profile Editing) -->
+        <div id="voice-recorder-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-[#1d1235] border border-purple-800/60 w-full max-w-xs rounded-2xl p-5 text-center">
+                <h3 class="text-lg font-bold text-white mb-2">ضبط ویس اسپایسی 🎙️</h3>
+                <p class="text-xs text-gray-400 mb-4">یک ویس حداکثر ۱۲ ثانیه‌ای برای پروفایل خود ضبط کنید.</p>
+                
+                <div class="text-2xl font-mono text-red-400 my-3" id="voice-timer">00:12</div>
+
+                <button id="btn-record-voice" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-2xl mx-auto my-4 transition">
+                    🎙️
+                </button>
+                <div id="record-voice-label" class="text-xs text-gray-300 mb-4">برای شروع ضبط کلیک کنید</div>
+
+                <div class="flex gap-2 justify-center">
+                    <button id="btn-save-voice" class="bg-green-600 text-white text-xs px-4 py-2 rounded-lg font-bold hidden">ذخیره ویس</button>
+                    <button id="btn-close-voice" class="bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded-lg">انصراف</button>
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-around items-center w-full max-w-sm mt-4">
-            <button id="btn-pass" class="action-btn w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-lg text-gray-400 hover:bg-white/10">❌</button>
-            <button id="btn-super" class="action-btn w-12 h-12 btn-super-spicy rounded-full flex items-center justify-center text-lg text-white shadow-lg">⭐</button>
-            <button id="btn-game" class="action-btn w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-black text-xl font-bold hover:scale-110">🎮</button>
-            <button id="btn-like" class="action-btn w-14 h-14 btn-spicy rounded-full flex items-center justify-center text-2xl text-white shadow-xl hover:shadow-2xl">🌶️</button>
+        <!-- Telegram Stars VIP Purchase Modal -->
+        <div id="vip-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-[#1d1235] border border-amber-500/30 w-full max-w-sm rounded-2xl p-5 text-center relative">
+                <button id="btn-close-vip" class="absolute top-3 left-3 text-gray-400 text-lg">✕</button>
+                
+                <div class="text-3xl mb-1">👑</div>
+                <h3 class="text-xl font-black text-amber-400 mb-1">عضویت ویژه Spicy VIP</h3>
+                <p class="text-xs text-gray-300 mb-4">دسترسی به لایک نامحدود، دیدن کسانی که به شما لایک داده‌اند و ویس‌های اختصاصی!</p>
+
+                <!-- Plan Options -->
+                <div class="space-y-2 mb-5">
+                    <div class="vip-card-option selected border border-amber-500 bg-amber-500/10 p-3 rounded-xl flex justify-between items-center cursor-pointer" data-plan="1-month" data-stars="150">
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white">اشتراک ۱ ماهه</div>
+                            <div class="text-xs text-amber-300">محبوب‌ترین انتخاب</div>
+                        </div>
+                        <div class="text-amber-400 font-bold text-sm">⭐️ 150 ستاره</div>
+                    </div>
+
+                    <div class="vip-card-option border border-purple-800 bg-purple-900/20 p-3 rounded-xl flex justify-between items-center cursor-pointer" data-plan="3-month" data-stars="350">
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-white">اشتراک ۳ ماهه</div>
+                            <div class="text-xs text-gray-400">با تخفیف ویژه</div>
+                        </div>
+                        <div class="text-amber-400 font-bold text-sm">⭐️ 350 ستاره</div>
+                    </div>
+                </div>
+
+                <button id="btn-confirm-vip" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-black text-sm rounded-xl shadow-lg transition">
+                    پرداخت با Telegram Stars ⭐️
+                </button>
+            </div>
         </div>
 
-        <p id="feed-error" class="text-error-text text-center mt-4"></p>
     </main>
 
-    <!-- بقیه صفحات (چت‌ها، شبانه، بازی‌ها، پروفایل، مودال‌ها) دقیقاً مثل قبلی — فقط نیاز به کپی از پیام قبلی دارید -->
+    <!-- Bottom Navigation Bar -->
+    <nav class="border-t border-purple-900/40 bg-[#150e27] px-6 py-2 flex justify-between items-center">
+        <button class="flex flex-col items-center gap-1 text-red-500">
+            <span class="text-xl">🌶️</span>
+            <span class="text-[10px] font-bold">دک</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+            <span class="text-xl">💬</span>
+            <span class="text-[10px]">چت‌ها</span>
+        </button>
+        <button id="btn-open-record" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+            <span class="text-xl">🎙️</span>
+            <span class="text-[10px]">ویس من</span>
+        </button>
+        <button class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+            <span class="text-xl">👤</span>
+            <span class="text-[10px]">پروفایل</span>
+        </button>
+    </nav>
 
-    <script src="app.js"></script>
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white border border-purple-500/50 text-xs px-4 py-2.5 rounded-full shadow-2xl opacity-0 pointer-events-none z-50">
+        پیام سیستم
+    </div>
+
+    <!-- Script File -->
+    <script src="app_3.js"></script>
 </body>
 </html>
