@@ -15,7 +15,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || 'spicy_secret_key_2026';
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://your-app-url.netlify.app';
 
-// راه‌اندازی ربات تلگرام (بدون Polling زاید)
+// راه‌اندازی ربات تلگرام
 let bot = null;
 if (BOT_TOKEN) {
     bot = new TelegramBot(BOT_TOKEN, { polling: false });
@@ -30,13 +30,15 @@ if (MONGO_URI) {
     console.warn('⚠️ MONGO_URI تعریف نشده است. اتصال دیتابیس برقرار نشد.');
 }
 
-// ۳. مدل کاربر در دیتابیس
+// ۳. مدل کامل کاربر در دیتابیس (شامل فیلدهای جدید)
 const UserSchema = new mongoose.Schema({
     telegramId: { type: Number, required: true, unique: true },
     firstName: String,
     username: String,
     age: { type: Number, default: 22 },
+    gender: { type: String, default: 'female' }, // male یا female
     city: { type: String, default: 'بندرعباس' },
+    bio: { type: String, default: '' },
     photo: String,
     isVip: { type: Boolean, default: false },
     likes: [{ type: Number }], // لیست ID کسانی که لایک کرده
@@ -95,19 +97,74 @@ app.post('/api/auth/telegram', async (req, res) => {
     }
 });
 
-// ۶. دریافت پیشنهاد کاربران برای کارت‌های اکسپلور
+// ۶. دریافت اطلاعات کامل پروفایل کاربر
+app.get('/api/user/:telegramId', async (req, res) => {
+    try {
+        const telegramId = Number(req.params.telegramId);
+        let user = await User.findOne({ telegramId });
+        
+        if (!user) {
+            user = await User.create({ telegramId });
+        }
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ۷. ذخیره دائمی تغییرات پروفایل (جنسیت، شهر، بیوگرافی)
+app.post('/api/user/update', async (req, res) => {
+    try {
+        const { telegramId, gender, city, bio } = req.body;
+        
+        await User.updateOne(
+            { telegramId: Number(telegramId) },
+            { $set: { gender, city, bio } },
+            { upsert: true }
+        );
+
+        res.json({ success: true, message: 'اطلاعات با موفقیت ذخیره شد.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ۸. فعال‌سازی اکانت VIP
+app.post('/api/user/vip', async (req, res) => {
+    try {
+        const { telegramId } = req.body;
+        await User.updateOne({ telegramId: Number(telegramId) }, { $set: { isVip: true } });
+        res.json({ success: true, message: 'اشتراک VIP با موفقیت فعال شد.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ۹. دریافت پیشنهادات کاربران همراه با فیلتر جنسیت و شهر
 app.get('/likes/suggested/:telegramId', async (req, res) => {
     try {
         const currentId = Number(req.params.telegramId);
-        
-        // دریافت کاربران غیر از کاربر فعلی
-        const users = await User.find({ telegramId: { $ne: currentId } }).limit(20);
-        
+        const { gender, city } = req.query;
+
+        // ساخت کوئری فیلتر
+        let query = { telegramId: { $ne: currentId } };
+
+        if (gender && gender !== 'all') {
+            query.gender = gender;
+        }
+        if (city && city !== 'all') {
+            query.city = city;
+        }
+
+        const users = await User.find(query).limit(20);
+
         const formattedUsers = users.map(u => ({
             telegram_id: u.telegramId,
             name: u.firstName || 'کاربر اسپایسی',
-            age: u.age,
-            city: u.city,
+            age: u.age || 22,
+            gender: u.gender || 'female',
+            city: u.city || 'بندرعباس',
+            bio: u.bio || 'چیزی برای درباره من ثبت نشده است.',
             photo: u.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500'
         }));
 
@@ -117,7 +174,33 @@ app.get('/likes/suggested/:telegramId', async (req, res) => {
     }
 });
 
-// ۷. اندپوینت ثبت لایک و ارسال نوتیفیکیشن
+// ۱۰. دریافت لیست علاقه‌مندی‌ها (کسانی که کاربر لایک کرده)
+app.get('/likes/favorites/:telegramId', async (req, res) => {
+    try {
+        const currentId = Number(req.params.telegramId);
+        const currentUser = await User.findOne({ telegramId: currentId });
+
+        if (!currentUser || !currentUser.likes || currentUser.likes.length === 0) {
+            return res.json([]);
+        }
+
+        const favoriteUsers = await User.find({ telegramId: { $in: currentUser.likes } });
+
+        const result = favoriteUsers.map(u => ({
+            telegram_id: u.telegramId,
+            name: u.firstName || 'کاربر اسپایسی',
+            username: u.username || '',
+            city: u.city || 'بندرعباس',
+            photo: u.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500'
+        }));
+
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در دریافت علاقه‌مندی‌ها' });
+    }
+});
+
+// ۱۱. اندپوینت ثبت لایک و ارسال نوتیفیکیشن تلگرام
 app.post('/likes/add/:fromUser/:toUser', async (req, res) => {
     try {
         const fromUser = Number(req.params.fromUser);
@@ -147,7 +230,7 @@ app.post('/likes/add/:fromUser/:toUser', async (req, res) => {
     }
 });
 
-// ۸. حذف لایک
+// ۱۲. حذف لایک
 app.delete('/likes/remove/:fromUser/:toUser', async (req, res) => {
     try {
         const fromUser = Number(req.params.fromUser);
@@ -164,7 +247,7 @@ app.delete('/likes/remove/:fromUser/:toUser', async (req, res) => {
     }
 });
 
-// ۹. اجرای سرور
+// ۱۳. اجرای سرور
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Spicy Date Server running on port ${PORT}`);
