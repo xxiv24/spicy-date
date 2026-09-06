@@ -1,240 +1,215 @@
+// ۱. تنظیمات اولیه و متغیرهای عمومی
 const tg = window.Telegram?.WebApp;
 if (tg) {
-    tg.ready();
-    tg.expand();
+    tg.expand(); // بزرگ‌نمایی کامل مینی‌اپ در تلگرام
 }
 
-const currentUser = tg?.initDataUnsafe?.user || { id: 12345678, first_name: "کاربر مهمان", username: "guest" };
-const API_BASE_URL = window.location.origin;
+// آدرس بک‌اند روی رندر
+const API_URL = 'https://spicy-date-api.onrender.com';
 
-// لیست جامع شهرهای ایران
-const IRAN_CITIES = [
-    "بندرعباس", "تهران", "شیراز", "اصفهان", "مشهد", "تبریز", "کرج", "اهواز", 
-    "رشت", "کرمان", "کرمانشاه", "ارومیه", "یزد", "بوشهر", "همدان", "زاهدان", 
-    "قزوین", "ساری", "گرگان", "کیش", "قشم", "چابهار"
-];
+// دریافت شناسه کاربر از تلگرام (در صورت عدم وجود، شناسه تست ۱۰۰ استفاده می‌شود)
+const userId = tg?.initDataUnsafe?.user?.id || 100;
+const userInitData = tg?.initData || '';
 
-// لرزش لمسی تلگرام
-function triggerHaptic(type = 'light') {
-    if (tg?.HapticFeedback) {
-        if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
-        else tg.HapticFeedback.impactOccurred(type);
+let currentUserData = null;
+
+// ۲. اجرای اولیه برنامه هنگام لود صفحه
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+    setupNavigation();
+});
+
+async function initApp() {
+    await fetchUserProfile();
+    await fetchSuggestedUsers();
+}
+
+// ۳. دریافت و نمایش اطلاعات پروفایل کاربر
+async function fetchUserProfile() {
+    try {
+        const response = await fetch(`${API_URL}/api/user/${userId}`);
+        if (response.ok) {
+            currentUserData = await response.json();
+            updateProfileUI(currentUserData);
+        }
+    } catch (error) {
+        console.error("خطا در دریافت پروفایل کاربر:", error);
     }
 }
 
-// مدیریت تب‌ها
-function switchTab(tabName) {
-    const tabs = ['explore', 'favorites', 'chats', 'profile'];
-    
-    tabs.forEach(tab => {
-        const section = document.getElementById(`tab-${tab}`);
-        const navBtn = document.getElementById(`nav-${tab}`);
-        
-        if (tab === tabName) {
-            section?.classList.remove('hidden');
-            if (navBtn) navBtn.className = "flex flex-col items-center gap-1 text-rose-500 font-bold scale-105 transition-transform";
-        } else {
-            section?.classList.add('hidden');
-            if (navBtn) navBtn.className = "flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors";
-        }
-    });
+function updateProfileUI(data) {
+    const genderSelect = document.getElementById('user-gender');
+    const citySelect = document.getElementById('user-city');
+    const bioInput = document.getElementById('user-bio');
+    const vipBadge = document.getElementById('vip-status-badge');
 
-    if (tabName === 'profile') loadUserProfile();
-    if (tabName === 'favorites') loadFavorites();
+    if (genderSelect && data.gender) genderSelect.value = data.gender;
+    if (citySelect && data.city) citySelect.value = data.city;
+    if (bioInput && data.bio) bioInput.value = data.bio;
+    if (vipBadge) {
+        vipBadge.innerText = data.isVip ? 'کاربر VIP ⭐' : 'کاربر عادی ⭐️';
+        vipBadge.className = data.isVip ? 'badge vip' : 'badge normal';
+    }
 }
 
-// دریافت و نمایش کاربران پیشنهاد شده با فیلتر
-async function loadSuggestedUsers() {
-    const container = document.getElementById('cards-container');
-    const genderFilter = document.getElementById('filter-gender')?.value || 'all';
-    const cityFilter = document.getElementById('filter-city')?.value || 'all';
+// ۴. ذخیره تغییرات پروفایل
+async function saveProfile() {
+    const gender = document.getElementById('user-gender')?.value || 'female';
+    const city = document.getElementById('user-city')?.value || 'بندرعباس';
+    const bio = document.getElementById('user-bio')?.value || '';
 
     try {
-        const res = await fetch(`${API_BASE_URL}/likes/suggested/${currentUser.id}?gender=${genderFilter}&city=${cityFilter}`);
-        const users = await res.json();
+        const response = await fetch(`${API_URL}/api/user/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId: userId, gender, city, bio })
+        });
 
+        if (response.ok) {
+            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            alert('اطلاعات با موفقیت ذخیره شد!');
+        }
+    } catch (error) {
+        alert('خطا در ذخیره اطلاعات!');
+    }
+}
+
+// ۵. دریافت لیست پیشنهاد کاربران (کارت‌های اکسپلور) همراه با تایم‌اوت
+async function fetchSuggestedUsers(gender = 'all', city = 'all') {
+    const container = document.getElementById('cards-container');
+    if (container) {
+        container.innerHTML = '<div class="loading">در حال دریافت اطلاعات...</div>';
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+        const response = await fetch(`${API_URL}/likes/suggested/${userId}?gender=${gender}&city=${city}`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('مشکل در دریافت داده‌ها');
+
+        const users = await response.json();
+        
         if (!users || users.length === 0) {
+            if (container) {
+                container.innerHTML = '<p class="empty-msg">کاربری با این مشخصات یافت نشد.</p>';
+            }
+            return;
+        }
+
+        renderCards(users);
+    } catch (error) {
+        console.error("خطا در ارتباط با سرور:", error);
+        if (container) {
             container.innerHTML = `
-                <div class="text-center py-10 bg-slate-900/60 rounded-3xl border border-slate-800 p-6">
-                    <p class="text-slate-400 font-medium text-sm">کاربری یافت نشد!</p>
+                <div class="error-box" style="text-align: center; padding: 20px;">
+                    <p style="color: #ff4d4d; margin-bottom: 10px;">خطا در دریافت اطلاعات از سرور!</p>
+                    <button onclick="fetchSuggestedUsers('${gender}', '${city}')" style="padding: 8px 16px; border-radius: 8px; background: #ff2a5f; color: #fff; border: none;">تلاش مجدد 🔄</button>
                 </div>
             `;
-            return;
         }
-
-        const user = users[0];
-        const cityOptions = IRAN_CITIES.map(c => `<option value="${c}" ${cityFilter === c ? 'selected' : ''}>${c}</option>`).join('');
-
-        container.innerHTML = `
-            <div class="flex gap-2 mb-4 bg-slate-900/80 p-2 rounded-2xl border border-slate-800 text-xs">
-                <select id="filter-gender" onchange="loadSuggestedUsers()" class="bg-slate-950 text-slate-300 p-2 rounded-xl flex-1 outline-none border border-slate-800">
-                    <option value="all">همه جنسیت‌ها</option>
-                    <option value="female" ${genderFilter === 'female' ? 'selected' : ''}>فقط دختران 👩</option>
-                    <option value="male" ${genderFilter === 'male' ? 'selected' : ''}>فقط پسران 👨</option>
-                </select>
-                <select id="filter-city" onchange="loadSuggestedUsers()" class="bg-slate-950 text-slate-300 p-2 rounded-xl flex-1 outline-none border border-slate-800">
-                    <option value="all">همه شهرها</option>
-                    ${cityOptions}
-                </select>
-            </div>
-
-            <div class="relative bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-2xl backdrop-blur-md">
-                <div class="relative w-full h-80 rounded-2xl overflow-hidden mb-3 bg-slate-950">
-                    <img src="${user.photo || 'https://via.placeholder.com/400x500'}" class="w-full h-full object-cover" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent"></div>
-                    <div class="absolute bottom-4 right-4 left-4 text-white">
-                        <div class="flex items-baseline gap-2">
-                            <h3 class="text-2xl font-bold">${user.name}</h3>
-                            <span class="text-base text-slate-300 font-normal">${user.age || 20} ساله</span>
-                        </div>
-                        <p class="text-xs text-rose-400 mt-1">📍 ${user.city || 'بندرعباس'} • ${user.gender === 'female' ? 'دختر 👧' : 'پسر 👦'}</p>
-                    </div>
-                </div>
-
-                <!-- بخش درباره من -->
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 mb-4">
-                    <p class="text-xs text-slate-300 leading-relaxed">💬 ${user.bio || 'هنوز بیوگرافی ثبت نکرده است.'}</p>
-                </div>
-
-                <div class="flex gap-3">
-                    <button onclick="triggerHaptic('medium'); loadSuggestedUsers();" class="w-1/3 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl flex items-center justify-center">
-                        ✖️ رد
-                    </button>
-                    <button onclick="toggleLike('${user.telegram_id}')" class="w-2/3 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2">
-                        ❤️ لایک اسپایسی
-                    </button>
-                </div>
-            </div>
-        `;
-    } catch (err) {
-        console.error(err);
     }
 }
 
-// ثبت لایک
-async function toggleLike(toUserId) {
-    triggerHaptic('success');
-    await fetch(`${API_BASE_URL}/likes/add/${currentUser.id}/${toUserId}`, { method: 'POST' });
-    loadSuggestedUsers();
+// ۶. رندر کردن کارت‌های کاربران
+function renderCards(users) {
+    const container = document.getElementById('cards-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.innerHTML = `
+            <img src="${user.photo}" alt="${user.name}" class="card-img" />
+            <div class="card-info">
+                <h3>${user.name}، ${user.age} <span class="city-tag">📍 ${user.city}</span></h3>
+                <p>${user.bio}</p>
+                <div class="card-actions">
+                    <button onclick="handleLike(${user.telegram_id})" class="btn-like">🔥 لایک</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
-// دریافت و لود اطلاعات واقعی کاربر از دیتابیس
-async function loadUserProfile() {
-    const profileSection = document.getElementById('tab-profile');
-    
+// ۷. ثبت لایک کاربر
+async function handleLike(toUserId) {
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/user/${currentUser.id}`);
-        const dbUser = await res.json();
-
-        const cityOptions = IRAN_CITIES.map(c => `<option value="${c}" ${dbUser.city === c ? 'selected' : ''}>${c}</option>`).join('');
-
-        profileSection.innerHTML = `
-            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                <div class="w-20 h-20 bg-rose-500/20 border-2 border-rose-500 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl overflow-hidden">
-                    ${currentUser.photo_url ? `<img src="${currentUser.photo_url}" class="w-full h-full object-cover"/>` : '👤'}
-                </div>
-                <h2 class="text-xl font-bold text-center text-white">${currentUser.first_name}</h2>
-                <p class="text-xs text-center text-rose-400 mt-1 mb-4">@${currentUser.username || 'بدون آیدی'}</p>
-
-                <!-- بنر اکانت VIP -->
-                <div class="bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6 text-center">
-                    <h3 class="text-sm font-bold text-amber-400 mb-1">👑 اشتراک ویژه (VIP)</h3>
-                    <p class="text-[11px] text-slate-300 mb-3">${dbUser.isVip ? 'حساب شما ویژه است!' : 'دیدن کسانی که شما را لایک کرده‌اند + لایک نامحدود'}</p>
-                    ${!dbUser.isVip ? `<button onclick="activateVip()" class="w-full py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl text-xs shadow-lg">ارتقا به VIP (اشتراک)</button>` : ''}
-                </div>
-
-                <!-- فرم ویرایش اطلاعات -->
-                <div class="space-y-4 text-right border-t border-slate-800 pt-4">
-                    <h3 class="text-xs font-bold text-slate-400">ویرایش اطلاعات شخصی:</h3>
-                    
-                    <div>
-                        <label class="text-xs text-slate-300 block mb-1">جنسیت شما:</label>
-                        <select id="edit-gender" class="w-full bg-slate-950 text-slate-200 p-2.5 rounded-xl border border-slate-800 text-xs">
-                            <option value="male" ${dbUser.gender === 'male' ? 'selected' : ''}>پسر 👦</option>
-                            <option value="female" ${dbUser.gender === 'female' ? 'selected' : ''}>دختر 👧</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-slate-300 block mb-1">شهر شما:</label>
-                        <select id="edit-city" class="w-full bg-slate-950 text-slate-200 p-2.5 rounded-xl border border-slate-800 text-xs">
-                            ${cityOptions}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-slate-300 block mb-1">درباره من (بیوگرافی):</label>
-                        <textarea id="edit-bio" rows="3" class="w-full bg-slate-950 text-slate-200 p-2.5 rounded-xl border border-slate-800 text-xs focus:outline-none focus:border-rose-500" placeholder="چیزی درباره خودت بنویس...">${dbUser.bio || ''}</textarea>
-                    </div>
-
-                    <button onclick="saveUserProfile()" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition">
-                        ذخیره تغییرات دائم 💾
-                    </button>
-                </div>
-            </div>
-        `;
-    } catch (err) {
-        console.error(err);
+        const response = await fetch(`${API_URL}/likes/add/${userId}/${toUserId}`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            alert('لایک ثبت شد! 🔥');
+            fetchSuggestedUsers();
+        }
+    } catch (error) {
+        console.error("خطا در ثبت لایک:", error);
     }
 }
 
-// ذخیره دائمی پروفایل در MongoDB
-async function saveUserProfile() {
-    triggerHaptic('success');
-    const gender = document.getElementById('edit-gender').value;
-    const city = document.getElementById('edit-city').value;
-    const bio = document.getElementById('edit-bio').value;
-
-    await fetch(`${API_BASE_URL}/api/user/update`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: currentUser.id, gender, city, bio })
-    });
-
-    tg.showAlert('اطلاعات شما با موفقیت ذخیره شد!');
-}
-
-// فعال‌سازی آزمایشی VIP
-async function activateVip() {
-    triggerHaptic('success');
-    await fetch(`${API_BASE_URL}/api/user/vip`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: currentUser.id })
-    });
-    tg.showAlert('اشتراک VIP شما فعال شد! 👑');
-    loadUserProfile();
-}
-
-// لود تب علاقه‌مندی‌ها
-async function loadFavorites() {
+// ۸. دریافت لیست علاقه‌مندی‌ها
+async function fetchFavorites() {
     const container = document.getElementById('favorites-container');
-    try {
-        const res = await fetch(`${API_BASE_URL}/likes/favorites/${currentUser.id}`);
-        const list = await res.json();
+    if (!container) return;
 
-        if (!list || list.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-500 text-center py-8">لیست علاقه‌مندی‌های شما خالی است.</p>';
+    container.innerHTML = '<div class="loading">در حال دریافت علاقه‌مندی‌ها...</div>';
+
+    try {
+        const response = await fetch(`${API_URL}/likes/favorites/${userId}`);
+        const favorites = await response.json();
+
+        if (favorites.length === 0) {
+            container.innerHTML = '<p class="empty-msg">لیست علاقه‌مندی‌های شما خالی است.</p>';
             return;
         }
 
-        container.innerHTML = list.map(item => `
-            <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-2xl">
-                <div class="flex items-center gap-3">
-                    <img src="${item.photo || 'https://via.placeholder.com/100'}" class="w-12 h-12 rounded-full object-cover" />
-                    <div>
-                        <h4 class="text-sm font-bold text-white">${item.name}</h4>
-                        <p class="text-[10px] text-slate-400">📍 ${item.city}</p>
-                    </div>
+        container.innerHTML = '';
+        favorites.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'fav-item';
+            item.innerHTML = `
+                <img src="${user.photo}" class="fav-img" />
+                <div class="fav-details">
+                    <h4>${user.name}</h4>
+                    <p>📍 ${user.city}</p>
                 </div>
-                <button onclick="tg.openTelegramLink('https://t.me/${item.username}')" class="px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-bold">
-                    چت 💬
-                </button>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error(err);
+            `;
+            container.appendChild(item);
+        });
+    } catch (error) {
+        container.innerHTML = '<p class="error-msg">خطا در دریافت لیست.</p>';
     }
 }
 
-document.addEventListener('DOMContentLoaded', loadSuggestedUsers);
+// ۹. ناوبری و سوئیچ بین تب‌های مینی‌اپ
+function setupNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const tabViews = document.querySelectorAll('.tab-view');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const targetTab = item.getAttribute('data-tab');
+
+            navItems.forEach(n => n.classList.remove('active'));
+            tabViews.forEach(v => v.classList.remove('active'));
+
+            item.classList.add('active');
+            const targetEl = document.getElementById(`tab-${targetTab}`);
+            if (targetEl) targetEl.classList.add('active');
+
+            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+
+            if (targetTab === 'favorites') {
+                fetchFavorites();
+            }
+        });
+    });
+}
