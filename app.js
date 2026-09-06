@@ -45,17 +45,85 @@ let MOCK_USERS = [
     }
 ];
 
+const DAILY_REWARDS = [
+    { day: 1, icon: "⚡", text: "10" },
+    { day: 2, icon: "⭐", text: "+40%" },
+    { day: 3, icon: "⭐", text: "2" },
+    { day: 4, icon: "⚡", text: "100" },
+    { day: 5, icon: "⚡", text: "200" },
+    { day: 6, icon: "⭐", text: "3" },
+    { day: 7, icon: "🔥", text: "+40%" },
+    { day: 8, icon: "⚡", text: "300" },
+    { day: 9, icon: "⭐", text: "2" },
+    { day: 10, icon: "⚡", text: "200" },
+    { day: 11, icon: "👑", text: "+40%" },
+    { day: 12, icon: "⭐", text: "3" },
+    { day: 13, icon: "⚡", text: "500" },
+    { day: 14, icon: "🔥", text: "+40%" },
+    { day: 15, icon: "⭐", text: "5" },
+    { day: 16, icon: "⚡", text: "300" }
+];
+
 let suggestedUsersQueue = [];
 let likedUsersList = [];
 let historyStack = [];
 let isVip = false;
 
+// داده‌های Daily Check-in
+let dailyStreak = 0;
+let lastClaimTimestamp = 0;
+let timerInterval = null;
+
 document.addEventListener('DOMContentLoaded', () => {
+    initMotionBackground();
     populateCities();
     setupNavigation();
-    loadSavedProfile();
+    loadProfileCloud();
     fetchSuggestedUsers();
 });
+
+// ۱. انیمیشن موشن ذرات بک‌گراند
+function initMotionBackground() {
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+
+    const particles = Array.from({ length: 45 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 2.2 + 0.5,
+        alpha: Math.random() * 0.6 + 0.2,
+        speedY: -(Math.random() * 0.4 + 0.1),
+        speedX: (Math.random() - 0.5) * 0.2
+    }));
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        particles.forEach(p => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+
+            if (p.y < 0) p.y = height;
+            if (p.x < 0) p.x = width;
+            if (p.x > width) p.x = 0;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+            ctx.fill();
+        });
+        requestAnimationFrame(animate);
+    }
+    animate();
+}
 
 function showToast(text, icon = "✨") {
     const toast = document.getElementById('custom-toast');
@@ -65,7 +133,154 @@ function showToast(text, icon = "✨") {
     setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-// مدیریت جابه‌جایی بین صفحات (Tabs)
+// ۲. ذخیره‌سازی ابری در Telegram CloudStorage (پایدار حتی پس از پاک کردن کش)
+function saveProfileCloud() {
+    const profileData = {
+        name: document.getElementById('user-display-name').value,
+        age: document.getElementById('user-age').value,
+        gender: document.getElementById('user-gender').value,
+        city: document.getElementById('user-city').value,
+        intent: document.getElementById('user-intent').value,
+        bio: document.getElementById('user-bio').value,
+        incognito: document.getElementById('user-incognito').checked,
+        avatar: document.getElementById('profile-avatar').src,
+        dailyStreak: dailyStreak,
+        lastClaimTimestamp: lastClaimTimestamp
+    };
+
+    const dataStr = JSON.stringify(profileData);
+
+    if (tg && tg.CloudStorage) {
+        tg.CloudStorage.setItem('spicy_user_cloud_data', dataStr, (err, success) => {
+            if (success) {
+                showToast("اطلاعات در سرور ابری تلگرام ذخیره شد!", "☁️");
+            } else {
+                localStorage.setItem('spicy_user_profile', dataStr);
+                showToast("اطلاعات ذخیره شد.", "💾");
+            }
+        });
+    } else {
+        localStorage.setItem('spicy_user_profile', dataStr);
+        showToast("اطلاعات ذخیره شد.", "💾");
+    }
+}
+
+function loadProfileCloud() {
+    const applyData = (dataStr) => {
+        if (!dataStr) return;
+        const data = JSON.parse(dataStr);
+        if (data.name) {
+            document.getElementById('user-display-name').value = data.name;
+            document.getElementById('profile-name-display').innerText = data.name;
+        }
+        if (data.age) document.getElementById('user-age').value = data.age;
+        if (data.gender) document.getElementById('user-gender').value = data.gender;
+        if (data.city) document.getElementById('user-city').value = data.city;
+        if (data.intent) document.getElementById('user-intent').value = data.intent;
+        if (data.bio) document.getElementById('user-bio').value = data.bio;
+        document.getElementById('user-incognito').checked = !!data.incognito;
+        if (data.avatar) document.getElementById('profile-avatar').src = data.avatar;
+
+        if (data.dailyStreak !== undefined) dailyStreak = data.dailyStreak;
+        if (data.lastClaimTimestamp !== undefined) lastClaimTimestamp = data.lastClaimTimestamp;
+    };
+
+    if (tg && tg.CloudStorage) {
+        tg.CloudStorage.getItem('spicy_user_cloud_data', (err, value) => {
+            if (value) {
+                applyData(value);
+            } else {
+                applyData(localStorage.getItem('spicy_user_profile'));
+            }
+        });
+    } else {
+        applyData(localStorage.getItem('spicy_user_profile'));
+    }
+}
+
+function saveProfileDirect() {
+    saveProfileCloud();
+    if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+}
+
+// ۳. سیستم Daily Check-in حرفه‌ای
+function openDailyModal() {
+    document.getElementById('daily-modal').classList.add('active');
+    renderDailyGrid();
+    updateDailyTimer();
+}
+
+function closeDailyModal() {
+    document.getElementById('daily-modal').classList.remove('active');
+    if (timerInterval) clearInterval(timerInterval);
+}
+
+function renderDailyGrid() {
+    const grid = document.getElementById('daily-grid');
+    grid.innerHTML = DAILY_REWARDS.map((item, idx) => {
+        const isClaimed = idx < dailyStreak;
+        const isCurrent = idx === dailyStreak;
+        return `
+            <div class="daily-item ${isClaimed ? 'claimed' : ''} ${isCurrent ? 'current' : ''}">
+                <span class="day-num">Day ${item.day}</span>
+                <span class="reward-icon">${isClaimed ? '✓' : item.icon}</span>
+                <span class="reward-text">${item.text}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateDailyTimer() {
+    const btn = document.getElementById('daily-claim-btn');
+    const now = Date.now();
+    const cooldown = 24 * 60 * 60 * 1000; // ۲۴ ساعت
+    const diff = now - lastClaimTimestamp;
+
+    if (diff >= cooldown || lastClaimTimestamp === 0) {
+        btn.innerText = "دریافت پاداش امروز 🎉";
+        btn.classList.add('active');
+        btn.disabled = false;
+    } else {
+        btn.classList.remove('active');
+        btn.disabled = true;
+        
+        if (timerInterval) clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            const currentDiff = Date.now() - lastClaimTimestamp;
+            const remaining = cooldown - currentDiff;
+
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+                btn.innerText = "دریافت پاداش امروز 🎉";
+                btn.classList.add('active');
+                btn.disabled = false;
+            } else {
+                const h = Math.floor(remaining / (1000 * 60 * 60));
+                const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((remaining % (1000 * 60)) / 1000);
+                btn.innerText = `پاداش بعدی در ${h}H ${m}M ${s}S`;
+            }
+        }, 1000);
+    }
+}
+
+function claimDailyReward() {
+    lastClaimTimestamp = Date.now();
+    dailyStreak = (dailyStreak + 1) % 17;
+    saveProfileCloud();
+    renderDailyGrid();
+    updateDailyTimer();
+    
+    if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('success');
+    }
+    showToast("پاداش روزانه با موفقیت دریافت شد!", "🎁");
+}
+
+// ۴. مدیریت تب‌ها و بخش‌های دیگر
 function setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const tabViews = document.querySelectorAll('.tab-view');
@@ -73,7 +288,6 @@ function setupNavigation() {
     navItems.forEach(button => {
         button.addEventListener('click', () => {
             const targetTab = button.getAttribute('data-tab');
-            
             navItems.forEach(btn => btn.classList.remove('active'));
             tabViews.forEach(view => view.classList.remove('active'));
 
@@ -99,53 +313,6 @@ function populateCities() {
         userCitySelect.innerHTML = '';
         sortedCities.forEach(city => userCitySelect.add(new Option(city, city)));
     }
-}
-
-function loadSavedProfile() {
-    const saved = localStorage.getItem('spicy_user_profile');
-    if (saved) {
-        const data = JSON.parse(saved);
-        if (data.name) document.getElementById('user-display-name').value = data.name;
-        if (data.age) document.getElementById('user-age').value = data.age;
-        if (data.name) document.getElementById('profile-name-display').innerText = data.name;
-        if (data.gender) document.getElementById('user-gender').value = data.gender;
-        if (data.city) document.getElementById('user-city').value = data.city;
-        if (data.intent) document.getElementById('user-intent').value = data.intent;
-        if (data.bio) document.getElementById('user-bio').value = data.bio;
-        document.getElementById('user-incognito').checked = !!data.incognito;
-        if (data.avatar) document.getElementById('profile-avatar').src = data.avatar;
-    }
-}
-
-function saveProfileDirect() {
-    const nameInput = document.getElementById('user-display-name').value;
-    const ageInput = document.getElementById('user-age').value;
-    const genderInput = document.getElementById('user-gender').value;
-    const cityInput = document.getElementById('user-city').value;
-    const intentInput = document.getElementById('user-intent').value;
-    const bioInput = document.getElementById('user-bio').value;
-    const incognitoInput = document.getElementById('user-incognito').checked;
-    const avatarInput = document.getElementById('profile-avatar').src;
-
-    const profileData = {
-        name: nameInput,
-        age: ageInput,
-        gender: genderInput,
-        city: cityInput,
-        intent: intentInput,
-        bio: bioInput,
-        incognito: incognitoInput,
-        avatar: avatarInput
-    };
-
-    localStorage.setItem('spicy_user_profile', JSON.stringify(profileData));
-    if (nameInput) document.getElementById('profile-name-display').innerText = nameInput;
-
-    if (tg && tg.HapticFeedback) {
-        tg.HapticFeedback.notificationOccurred('success');
-    }
-
-    showToast("اطلاعات پروفایل با موفقیت ذخیره شد!", "✅");
 }
 
 function fetchSuggestedUsers() {
@@ -295,7 +462,7 @@ function processPayment(starsCount, days) {
     showToast(`پرداخت ${starsCount} استارز انجام شد. VIP فعال شد!`, "⭐️");
     isVip = true;
     document.getElementById('vip-status-badge').classList.add('active');
-    document.getElementById('vip-status-badge').innerHTML = '👑 کاربر VIP';
+    document.getElementById('vip-status-badge').innerHTML = '👑 VIP';
 }
 
 function shareReferralLink() {
