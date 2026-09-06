@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- هدر برنامه -->
+    <!-- هدر -->
     <header class="app-header">
         <div class="brand">
             <span class="brand-icon">🌶️</span>
@@ -22,26 +22,28 @@
 
     <main class="main-content">
 
-        <!-- تب ۱: اکسپلور و سواپ کارت‌ها -->
+        <!-- تب ۱: اکسپلور -->
         <section id="tab-cards" class="tab-view active">
-            <!-- فیلترها -->
             <div class="filter-bar">
-                <select id="filter-gender" onchange="applyFilters()">
-                    <option value="all">همه جنسیت‌ها 👥</option>
-                    <option value="female">دختر 👧</option>
-                    <option value="male">پسر 👦</option>
-                </select>
-                <select id="filter-city" onchange="applyFilters()">
-                    <option value="all">همه شهرها 📍</option>
-                    <option value="بندرعباس">بندرعباس</option>
-                    <option value="تهران">تهران</option>
-                    <option value="شیراز">شیراز</option>
-                    <option value="اصفهان">اصفهان</option>
-                    <option value="مشهد">مشهد</option>
-                </select>
+                <div class="custom-select-wrapper">
+                    <select id="filter-gender" onchange="applyFilters()">
+                        <option value="all">همه جنسیت‌ها 👥</option>
+                        <option value="female">دختر 👧</option>
+                        <option value="male">پسر 👦</option>
+                    </select>
+                </div>
+                <div class="custom-select-wrapper">
+                    <select id="filter-city" onchange="applyFilters()">
+                        <option value="all">همه شهرها 📍</option>
+                        <option value="بندرعباس">بندرعباس</option>
+                        <option value="تهران">تهران</option>
+                        <option value="شیراز">شیراز</option>
+                        <option value="اصفهان">اصفهان</option>
+                        <option value="مشهد">مشهد</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- کانتینر اصلی کارت‌ها -->
             <div id="cards-container" class="cards-wrapper">
                 <div class="loading-spinner">
                     <div class="spinner"></div>
@@ -54,11 +56,9 @@
         <section id="tab-favorites" class="tab-view">
             <div class="section-title">
                 <h3>علاقه‌مندی‌های شما 🔥</h3>
-                <p>کسانی که لایک کرده‌اید یا شما را لایک کرده‌اند</p>
+                <p>کسانی که لایک کرده‌اید یا با آن‌ها مچ شده‌اید</p>
             </div>
-            <div id="favorites-container" class="favorites-grid">
-                <!-- دیتا درون JS رندر می‌شود -->
-            </div>
+            <div id="favorites-container" class="favorites-grid"></div>
         </section>
 
         <!-- تب ۳: گفتگوها -->
@@ -67,11 +67,20 @@
                 <h3>گفتگوها 💬</h3>
                 <p>با مچ‌های خود صحبت کنید</p>
             </div>
+            
+            <!-- لیست مچ‌های جدید به صورت افقی -->
+            <div class="matches-bar-wrapper">
+                <span class="sub-label">مچ‌های جدید</span>
+                <div id="new-matches-list" class="new-matches-scroll">
+                    <!-- متصل به JS -->
+                </div>
+            </div>
+
             <div id="chats-container" class="chats-list">
                 <div class="empty-state">
                     <div class="empty-icon">💌</div>
-                    <h4>هنوز مسابقه‌ای (Match) شکل نگرفته!</h4>
-                    <p>کارت‌های بیشتری را سواپ و لایک کنید تا با افراد جدید مچ شوید.</p>
+                    <h4>هنوز گفتگو فعال ندارید!</h4>
+                    <p>روی یکی از مچ‌های بالا کلیک کنید تا چت را شروع کنید.</p>
                 </div>
             </div>
         </section>
@@ -108,19 +117,29 @@
                 </div>
 
                 <div class="form-group">
+                    <label>ضبط صدای ۱۲ ثانیه‌ای (Spicy Voice 🎙️)</label>
+                    <div class="voice-recorder-box">
+                        <button type="button" id="btn-record-voice" onclick="toggleVoiceRecord()" class="btn-voice-rec">
+                            🎤 شروع ضبط صدا
+                        </button>
+                        <span id="voice-rec-status" class="rec-status">آماده ضبط</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label>درباره من (بیوگرافی)</label>
                     <textarea id="user-bio" rows="3" placeholder="یک جمله جذاب درباره خودت بنویس..."></textarea>
                 </div>
 
                 <button type="submit" class="btn-action btn-save">
-                    <span>💾</span> ذخیره پروفایل
+                    <span>💾</span> ذخیره تغییرات
                 </button>
             </form>
         </section>
 
     </main>
 
-    <!-- نوار ناوبری پایین -->
+    <!-- ناوبری پایین -->
     <nav class="bottom-nav">
         <button class="nav-item active" data-tab="cards">
             <div class="nav-icon">🔥</div>
@@ -139,6 +158,20 @@
             <span>پروفایل</span>
         </button>
     </nav>
+
+    <!-- مدال چت اختصاصی -->
+    <div id="chat-modal" class="chat-modal">
+        <div class="chat-header">
+            <button onclick="closeChat()" class="btn-back">➔</button>
+            <img id="chat-user-avatar" src="" alt="">
+            <span id="chat-user-name">نام کاربر</span>
+        </div>
+        <div id="chat-messages" class="chat-body"></div>
+        <div class="chat-footer">
+            <input type="text" id="chat-input" placeholder="پیامی بنویسید...">
+            <button onclick="sendChatMessage()" class="btn-send">🚀</button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
