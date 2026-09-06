@@ -13,7 +13,7 @@ app.use(cors());
 const MONGO_URI = process.env.MONGO_URI;
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || 'spicy_secret_key_2026';
-const WEBAPP_URL = process.env.WEBAPP_URL || 'https://your-app-url.netlify.app';
+const WEBAPP_URL = process.env.WEBAPP_URL || 'https://spicy-date.onrender.com';
 
 // راه‌اندازی ربات تلگرام
 let bot = null;
@@ -30,18 +30,18 @@ if (MONGO_URI) {
     console.warn('⚠️ MONGO_URI تعریف نشده است. اتصال دیتابیس برقرار نشد.');
 }
 
-// ۳. مدل کامل کاربر در دیتابیس (شامل فیلدهای جدید)
+// ۳. مدل کامل کاربر در دیتابیس
 const UserSchema = new mongoose.Schema({
     telegramId: { type: Number, required: true, unique: true },
     firstName: String,
     username: String,
     age: { type: Number, default: 22 },
-    gender: { type: String, default: 'female' }, // male یا female
+    gender: { type: String, default: 'female' },
     city: { type: String, default: 'بندرعباس' },
     bio: { type: String, default: '' },
     photo: String,
     isVip: { type: Boolean, default: false },
-    likes: [{ type: Number }], // لیست ID کسانی که لایک کرده
+    likes: [{ type: Number }],
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -140,13 +140,12 @@ app.post('/api/user/vip', async (req, res) => {
     }
 });
 
-// ۹. دریافت پیشنهادات کاربران همراه با فیلتر جنسیت و شهر
+// ۹. دریافت پیشنهادات کاربران همراه با فیلتر و داده‌های نمونه (Mock Data)
 app.get('/likes/suggested/:telegramId', async (req, res) => {
     try {
         const currentId = Number(req.params.telegramId);
         const { gender, city } = req.query;
 
-        // ساخت کوئری فیلتر
         let query = { telegramId: { $ne: currentId } };
 
         if (gender && gender !== 'all') {
@@ -156,7 +155,16 @@ app.get('/likes/suggested/:telegramId', async (req, res) => {
             query.city = city;
         }
 
-        const users = await User.find(query).limit(20);
+        let users = await User.find(query).limit(20);
+
+        // اگر دیتابیس خالی بود، کارت‌های نمونه نشان داده می‌شوند
+        if (users.length === 0) {
+            users = [
+                { telegramId: 101, firstName: 'سارا', age: 23, city: 'بندرعباس', gender: 'female', bio: 'علاقه‌مند به موزیک و عکاسی 📸', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500' },
+                { telegramId: 102, firstName: 'مریم', age: 25, city: 'تهران', gender: 'female', bio: 'علاقه‌مند به سفر و کافه‌گردی ☕', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500' },
+                { telegramId: 103, firstName: 'علی', age: 27, city: 'بندرعباس', gender: 'male', bio: 'برنامه‌نویس و عاشق تکنولوژی 💻', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500' }
+            ];
+        }
 
         const formattedUsers = users.map(u => ({
             telegram_id: u.telegramId,
@@ -164,7 +172,7 @@ app.get('/likes/suggested/:telegramId', async (req, res) => {
             age: u.age || 22,
             gender: u.gender || 'female',
             city: u.city || 'بندرعباس',
-            bio: u.bio || 'چیزی برای درباره من ثبت نشده است.',
+            bio: u.bio || 'چیزی ثبت نشده است.',
             photo: u.photo || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500'
         }));
 
@@ -174,7 +182,7 @@ app.get('/likes/suggested/:telegramId', async (req, res) => {
     }
 });
 
-// ۱۰. دریافت لیست علاقه‌مندی‌ها (کسانی که کاربر لایک کرده)
+// ۱۰. دریافت لیست علاقه‌مندی‌ها
 app.get('/likes/favorites/:telegramId', async (req, res) => {
     try {
         const currentId = Number(req.params.telegramId);
@@ -200,19 +208,17 @@ app.get('/likes/favorites/:telegramId', async (req, res) => {
     }
 });
 
-// ۱۱. اندپوینت ثبت لایک و ارسال نوتیفیکیشن تلگرام
+// ۱۱. ثبت لایک و ارسال نوتیفیکیشن تلگرام
 app.post('/likes/add/:fromUser/:toUser', async (req, res) => {
     try {
         const fromUser = Number(req.params.fromUser);
         const toUser = Number(req.params.toUser);
 
-        // بروزرسانی لایک در دیتابیس
         await User.updateOne(
             { telegramId: fromUser },
             { $addToSet: { likes: toUser } }
         );
 
-        // ارسال پیام تلگرامی به شخص دریافت‌کننده لایک
         if (bot) {
             bot.sendMessage(toUser, "🔥 **یک نفر شما را لایک کرد!**\nهمین حالا وارد مینی‌اپ شوید و ببینید چه کسی است.", {
                 parse_mode: 'Markdown',
