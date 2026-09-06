@@ -1,0 +1,411 @@
+:root {
+    --bg-main: #0d0c1d;
+    --bg-card: #161426;
+    --bg-input: #1f1c33;
+    --accent-red: #ff2a5f;
+    --accent-gold: #ffb703;
+    --text-primary: #ffffff;
+    --text-secondary: #9a97b2;
+    --border-color: #2a2744;
+    --radius-lg: 20px;
+    --radius-md: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    padding-bottom: 80px;
+    overflow-x: hidden;
+}
+
+/* هدر */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    background: rgba(13, 12, 29, 0.85);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-icon {
+    font-size: 22px;
+}
+
+.brand-title {
+    font-weight: 800;
+    font-size: 18px;
+    background: linear-gradient(45deg, #ff2a5f, #ff758c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.vip-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vip-badge.normal {
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.vip-badge.vip {
+    background: linear-gradient(45deg, #ffb703, #ffa200);
+    color: #000;
+}
+
+/* محتوا */
+.main-content {
+    padding: 15px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.tab-view {
+    display: none;
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+.tab-view.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* فیلترها */
+.filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.filter-bar select {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    outline: none;
+}
+
+/* کارت دیتینگ */
+.cards-wrapper {
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.dating-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.card-media {
+    position: relative;
+    height: 380px;
+    width: 100%;
+}
+
+.card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-gradient-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to top, rgba(22, 20, 38, 1), transparent);
+}
+
+.card-info-content {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    left: 15px;
+}
+
+.card-info-content h2 {
+    font-size: 22px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-info-content .age {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.city-badge {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #ff758c;
+    background: rgba(255, 42, 95, 0.15);
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.card-bio {
+    padding: 12px 15px 5px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* دکمه‌های ری‌اکشن */
+.card-actions-bar {
+    display: flex;
+    justify-content: space-around;
+    padding: 15px;
+    gap: 15px;
+}
+
+.btn-circle {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.btn-circle:active {
+    transform: scale(0.9);
+}
+
+.btn-pass {
+    background: var(--bg-input);
+    color: #ff4d4d;
+    border: 1px solid var(--border-color);
+}
+
+.btn-like-main {
+    background: linear-gradient(45deg, #ff2a5f, #ff758c);
+    color: #fff;
+    width: 65px;
+    height: 65px;
+    font-size: 26px;
+}
+
+/* فرم پروفایل */
+.profile-card-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 10px;
+}
+
+.avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent-red);
+}
+
+.online-indicator {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 15px;
+    height: 15px;
+    background: #2ecc71;
+    border: 2px solid var(--bg-main);
+    border-radius: 50%;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.form-group select, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.btn-action {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-save {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
+    color: #fff;
+}
+
+/* شبکه علاقه‌مندی‌ها */
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.fav-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.fav-card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+.fav-card-info {
+    padding: 10px;
+}
+
+.fav-card-info h4 {
+    font-size: 14px;
+}
+
+.fav-card-info p {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* لودینگ و خطا */
+.loading-spinner, .empty-state, .error-box {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--accent-red);
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.empty-icon {
+    font-size: 45px;
+    margin-bottom: 10px;
+}
+
+/* منوی پایین */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 65px;
+    background: rgba(22, 20, 38, 0.95);
+    backdrop-filter: blur(12px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    z-index: 200;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.nav-item .nav-icon {
+    font-size: 20px;
+    transition: transform 0.2s;
+}
+
+.nav-item.active {
+    color: var(--accent-red);
+    font-weight: bold;
+}
+
+.nav-item.active .nav-icon {
+    transform: translateY(-2px);
+}
