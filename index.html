@@ -2,81 +2,107 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spicy Date 🌶️</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-4 pb-24 select-none">
-
-    <!-- هدر برنامه -->
-    <header class="w-full max-w-md flex justify-between items-center py-3 border-b border-slate-800/80 mb-4">
-        <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400">
-            Spicy Date 🌶️
-        </h1>
-        <span id="vip-status-badge" class="text-xs font-bold px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/30 flex items-center gap-1">
-            ⭐️ کاربر عادی
-        </span>
-    </header>
-
-    <!-- محتوای صفحات -->
-    <main class="w-full max-w-md flex-1 flex flex-col items-center justify-start">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
+        body { background-color: #121218; color: #ffffff; padding-bottom: 70px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #222; }
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; background: #333; }
+        .badge.vip { background: #ffd700; color: #000; font-weight: bold; }
         
-        <!-- تب ۱: اکسپلور و فیلترها -->
-        <section id="tab-explore" class="w-full">
-            <div id="cards-container" class="w-full">
-                <div class="flex flex-col items-center justify-center py-12 text-slate-500">
-                    <div class="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-                    <p class="text-sm font-medium">در حال دریافت اطلاعات...</p>
-                </div>
-            </div>
-        </section>
+        .tab-view { display: none; padding: 15px; }
+        .tab-view.active { display: block; }
+        
+        /* کارت‌ها */
+        .user-card { background: #1e1e26; border-radius: 16px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .card-img { width: 100%; height: 320px; object-fit: cover; display: block; }
+        .card-info { padding: 15px; }
+        .city-tag { font-size: 14px; color: #aaa; font-weight: normal; }
+        .btn-like { width: 100%; padding: 12px; background: #ff2a5f; color: white; border: none; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; }
+        
+        /* فرم پروفایل */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #bbb; }
+        .form-group select, .form-group textarea { width: 100%; padding: 10px; background: #1e1e26; border: 1px solid #333; color: white; border-radius: 8px; }
+        .btn-save { width: 100%; padding: 12px; background: #4caf50; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
-        <!-- تب ۲: علاقه‌مندی‌ها (Favorites / Likes) -->
-        <section id="tab-favorites" class="w-full hidden">
-            <h2 class="text-lg font-bold text-slate-200 mb-4">❤️ کسانی که لایک کرده‌اید</h2>
-            <div id="favorites-container" class="space-y-3">
-                <p class="text-xs text-slate-500 text-center py-8">لیست علاقه‌مندی‌های شما خالی است.</p>
-            </div>
-        </section>
+        /* منوی پایین */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #181820; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #282830; }
+        .nav-item { color: #888; text-align: center; font-size: 11px; cursor: pointer; text-decoration: none; flex: 1; }
+        .nav-item.active { color: #ff2a5f; font-weight: bold; }
+        .nav-item span { display: block; font-size: 18px; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
 
-        <!-- تب ۳: گفتگوها و Matchها -->
-        <section id="tab-chats" class="w-full hidden">
-            <div class="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 text-center">
-                <p class="text-slate-400 text-sm">هنوز مسابقه‌ای (Match) شکل نگرفته است.</p>
-            </div>
-        </section>
+    <div class="header">
+        <span id="vip-status-badge" class="badge">کاربر عادی ⭐️</span>
+        <h2>Spicy Date 🌶️</h2>
+    </div>
 
-        <!-- تب ۴: پروفایل پیشرفته و VIP -->
-        <section id="tab-profile" class="w-full hidden">
-            <!-- محتوای دینامیک از app.js رندر می‌شود -->
-        </section>
+    <!-- تب ۱: کارت‌ها (اکسپلور) -->
+    <div id="tab-cards" class="tab-view active">
+        <div id="cards-container">
+            <div class="loading">در حال دریافت اطلاعات...</div>
+        </div>
+    </div>
 
-    </main>
+    <!-- تب ۲: علاقه‌مندی‌ها -->
+    <div id="tab-favorites" class="tab-view">
+        <div id="favorites-container">
+            <p class="empty-msg">لیست علاقه‌مندی‌های شما خالی است.</p>
+        </div>
+    </div>
 
-    <!-- منوی پایینی ۵ تایی -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-slate-900/95 border-t border-slate-800/80 backdrop-blur-lg px-3 py-2 z-50 flex justify-around items-center max-w-md mx-auto">
-        <button onclick="switchTab('explore')" id="nav-explore" class="flex flex-col items-center gap-1 text-rose-500 font-bold">
-            <span class="text-xl">🔥</span>
-            <span class="text-[10px]">کارت‌ها</span>
-        </button>
+    <!-- تب ۳: گفتگوها -->
+    <div id="tab-chats" class="tab-view">
+        <p style="text-align: center; color: #888; margin-top: 40px;">هنوز مسابقه‌ای (Match) شکل نگرفته است.</p>
+    </div>
 
-        <button onclick="switchTab('favorites')" id="nav-favorites" class="flex flex-col items-center gap-1 text-slate-400">
-            <span class="text-xl">❤️</span>
-            <span class="text-[10px]">علاقه‌مندی‌ها</span>
-        </button>
+    <!-- تب ۴: پروفایل -->
+    <div id="tab-profile" class="tab-view">
+        <div class="form-group">
+            <label>جنسیت شما:</label>
+            <select id="user-gender">
+                <option value="male">پسر 👦</option>
+                <option value="female">دختر 👧</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>شهر شما:</label>
+            <select id="user-city">
+                <option value="بندرعباس">بندرعباس</option>
+                <option value="تهران">تهران</option>
+                <option value="شیراز">شیراز</option>
+                <option value="اصفهان">اصفهان</option>
+                <option value="مشهد">مشهد</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>درباره من (بیوگرافی):</label>
+            <textarea id="user-bio" rows="3" placeholder="توضیح کوتاهی درباره خودتان بنویسید..."></textarea>
+        </div>
+        <button onclick="saveProfile()" class="btn-save">ذخیره تغییرات 💾</button>
+    </div>
 
-        <button onclick="switchTab('chats')" id="nav-chats" class="flex flex-col items-center gap-1 text-slate-400">
-            <span class="text-xl">💬</span>
-            <span class="text-[10px]">گفتگوها</span>
-        </button>
+    <!-- منوی ناوبری پایین -->
+    <div class="bottom-nav">
+        <div class="nav-item active" data-tab="cards">
+            <span>🔥</span> کارت‌ها
+        </div>
+        <div class="nav-item" data-tab="favorites">
+            <span>❤️</span> علاقه مندی‌ها
+        </div>
+        <div class="nav-item" data-tab="chats">
+            <span>💬</span> گفتگوها
+        </div>
+        <div class="nav-item" data-tab="profile">
+            <span>👤</span> پروفایل
+        </div>
+    </div>
 
-        <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400">
-            <span class="text-xl">👤</span>
-            <span class="text-[10px]">پروفایل</span>
-        </button>
-    </nav>
-
-    <script src="./app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
