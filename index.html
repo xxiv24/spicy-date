@@ -38,6 +38,41 @@
             position: relative;
         }
 
+        /* صفحه لودینگ اولیه با انیمیشن فلفل */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-main);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .pepper-loader {
+            font-size: 80px;
+            animation: pulsePepper 1.2s infinite ease-in-out alternate;
+            filter: drop-shadow(0 0 20px rgba(255, 42, 95, 0.6));
+        }
+
+        @keyframes pulsePepper {
+            0% { transform: scale(0.85) rotate(-5deg); opacity: 0.8; }
+            100% { transform: scale(1.15) rotate(5deg); opacity: 1; }
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
         /* بک‌گراند انیمیشنی ذرات شناور */
         #particle-canvas {
             position: fixed;
@@ -53,7 +88,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: calc(55px + env(safe-area-inset-top, 0px)) 16px 12px;
+            padding: calc(50px + env(safe-area-inset-top, 0px)) 16px 12px;
             background: rgba(13, 12, 29, 0.85);
             backdrop-filter: blur(12px);
             position: sticky;
@@ -64,18 +99,33 @@
 
         .brand-title {
             font-weight: 800; 
-            font-size: 18px;
+            font-size: 16px;
             background: linear-gradient(45deg, #ff2a5f, #ff758c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .header-actions { display: flex; gap: 6px; align-items: center; }
+
+        .stat-pill {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-pill.stars { color: var(--accent-gold); border-color: rgba(255, 183, 3, 0.3); }
+        .stat-pill.energy { color: #ff758c; border-color: rgba(255, 42, 95, 0.3); }
 
         .btn-daily-header {
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 11px;
+            padding: 5px 8px;
+            border-radius: 18px;
+            font-size: 10px;
             font-weight: 700;
             background: rgba(255, 183, 3, 0.15);
             color: var(--accent-gold);
@@ -83,26 +133,10 @@
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
-
-        .vip-badge {
-            padding: 6px 12px; 
-            border-radius: 20px; 
-            font-size: 11px; 
-            font-weight: 700;
-            background: var(--bg-input); 
-            color: var(--text-secondary); 
-            border: 1px solid var(--border-color);
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 4px;
-        }
-        .vip-badge.active { background: linear-gradient(45deg, #ffb703, #ff8800); color: #000; border: none; }
 
         .main-content { padding: 12px; max-width: 480px; margin: 0 auto; position: relative; z-index: 10; }
-        
         .tab-view { display: none; }
         .tab-view.active { display: block; animation: fadeIn 0.2s ease-in-out; }
 
@@ -208,7 +242,7 @@
         /* مودال Daily Check-in */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.88); backdrop-filter: blur(10px);
             z-index: 600; display: none; align-items: center; justify-content: center; padding: 16px;
         }
         .modal-overlay.active { display: flex; }
@@ -217,6 +251,26 @@
             background: #18152e; border: 1px solid var(--border-color);
             border-radius: var(--radius-lg); padding: 20px 16px; width: 100%; max-width: 400px;
             text-align: center; position: relative; max-height: 90vh; overflow-y: auto;
+        }
+
+        .modal-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .btn-modal-back {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 14px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .daily-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0; }
@@ -237,12 +291,17 @@
         }
         .daily-timer-btn.active { background: linear-gradient(45deg, #ff2a5f, #ff758c); }
 
-        /* مودال VIP */
         .vip-modal-content { background: var(--bg-card); border: 1px solid var(--accent-gold); border-radius: var(--radius-lg); padding: 18px; width: 100%; max-width: 380px; text-align: center; }
         .vip-plan-card { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     </style>
 </head>
 <body>
+
+    <!-- صفحه لودینگ اولیه با انیمیشن فلفل -->
+    <div id="splash-screen">
+        <div class="pepper-loader">🌶️</div>
+        <div class="loading-text">Spicy Date...</div>
+    </div>
 
     <!-- بوم انیمیشن موشن ذرات -->
     <canvas id="particle-canvas"></canvas>
@@ -257,12 +316,18 @@
             <span class="brand-title">Spicy Date 🌶️</span>
         </div>
         <div class="header-actions">
+            <!-- نمایش ستاره و انرژی فوقانی -->
+            <div class="stat-pill stars">
+                <span>⭐</span>
+                <span id="user-stars-count">0</span>
+            </div>
+            <div class="stat-pill energy">
+                <span>⚡</span>
+                <span id="user-energy-count">0</span>
+            </div>
             <button class="btn-daily-header" onclick="openDailyModal()">
                 <span>📅</span> بونوس
             </button>
-            <div id="vip-status-badge" class="vip-badge" onclick="openVipModal()">
-                <span>⭐️</span> VIP
-            </div>
         </div>
     </header>
 
@@ -383,9 +448,11 @@
     <!-- مودال Daily Check-in -->
     <div id="daily-modal" class="modal-overlay">
         <div class="daily-card-container">
-            <div style="display:flex; justify-style:space-between; align-items:center; margin-bottom:6px;">
-                <h3 style="font-size: 16px;">ورود روزانه (Daily Check-in)</h3>
-                <span onclick="closeDailyModal()" style="cursor:pointer; font-size:18px;">✕</span>
+            <div class="modal-header-bar">
+                <!-- دکمه بازگشت -->
+                <button class="btn-modal-back" onclick="closeDailyModal()">❮ بازگشت</button>
+                <h3 style="font-size: 15px;">ورود روزانه (Daily Check-in)</h3>
+                <div style="width:50px;"></div>
             </div>
             <p style="font-size: 10px; color: var(--text-secondary);">هر روز سر بزنید تا جوایز ویژه، انرژی و استارز بگیرید.</p>
             
