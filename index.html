@@ -5,103 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spicy Date 🌶️</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
-        body { background-color: #121218; color: #ffffff; padding-bottom: 70px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #222; }
-        .badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; background: #333; }
-        .badge.vip { background: #ffd700; color: #000; font-weight: bold; }
-        
-        .tab-view { display: none; padding: 15px; }
-        .tab-view.active { display: block; }
-        
-        /* کارت‌ها */
-        .user-card { background: #1e1e26; border-radius: 16px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .card-img { width: 100%; height: 320px; object-fit: cover; display: block; }
-        .card-info { padding: 15px; }
-        .city-tag { font-size: 14px; color: #aaa; font-weight: normal; }
-        .btn-like { width: 100%; padding: 12px; background: #ff2a5f; color: white; border: none; border-radius: 10px; margin-top: 10px; font-weight: bold; cursor: pointer; }
-        
-        /* فرم پروفایل */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #bbb; }
-        .form-group select, .form-group textarea { width: 100%; padding: 10px; background: #1e1e26; border: 1px solid #333; color: white; border-radius: 8px; }
-        .btn-save { width: 100%; padding: 12px; background: #4caf50; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
-
-        /* منوی پایین */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #181820; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #282830; }
-        .nav-item { color: #888; text-align: center; font-size: 11px; cursor: pointer; text-decoration: none; flex: 1; }
-        .nav-item.active { color: #ff2a5f; font-weight: bold; }
-        .nav-item span { display: block; font-size: 18px; margin-bottom: 2px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="header">
-        <span id="vip-status-badge" class="badge">کاربر عادی ⭐️</span>
-        <h2>Spicy Date 🌶️</h2>
-    </div>
+    <!-- هدر شیک و مدرن -->
+    <header class="app-header">
+        <div class="brand">
+            <span class="brand-icon">🌶️</span>
+            <span class="brand-title">Spicy Date</span>
+        </div>
+        <div id="vip-status-badge" class="vip-badge normal">
+            <span>⭐️</span> کاربر عادی
+        </div>
+    </header>
 
-    <!-- تب ۱: کارت‌ها (اکسپلور) -->
-    <div id="tab-cards" class="tab-view active">
-        <div id="cards-container">
-            <div class="loading">در حال دریافت اطلاعات...</div>
-        </div>
-    </div>
+    <main class="main-content">
 
-    <!-- تب ۲: علاقه‌مندی‌ها -->
-    <div id="tab-favorites" class="tab-view">
-        <div id="favorites-container">
-            <p class="empty-msg">لیست علاقه‌مندی‌های شما خالی است.</p>
-        </div>
-    </div>
+        <!-- تب ۱: اکسپلور و سواپ کارت‌ها -->
+        <section id="tab-cards" class="tab-view active">
+            <!-- نوار فیلتر بالای کارت‌ها -->
+            <div class="filter-bar">
+                <select id="filter-gender" onchange="applyFilters()">
+                    <option value="all">همه جنسیت‌ها 👥</option>
+                    <option value="female">دختر 👧</option>
+                    <option value="male">پسر 👦</option>
+                </select>
+                <select id="filter-city" onchange="applyFilters()">
+                    <option value="all">همه شهرها 📍</option>
+                    <option value="بندرعباس">بندرعباس</option>
+                    <option value="تهران">تهران</option>
+                    <option value="شیراز">شیراز</option>
+                    <option value="اصفهان">اصفهان</option>
+                    <option value="مشهد">مشهد</option>
+                </select>
+            </div>
 
-    <!-- تب ۳: گفتگوها -->
-    <div id="tab-chats" class="tab-view">
-        <p style="text-align: center; color: #888; margin-top: 40px;">هنوز مسابقه‌ای (Match) شکل نگرفته است.</p>
-    </div>
+            <!-- کانتینر کارت‌ها -->
+            <div id="cards-container" class="cards-wrapper">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>در حال یافتن پارتنرهای نزدیک...</p>
+                </div>
+            </div>
+        </section>
 
-    <!-- تب ۴: پروفایل -->
-    <div id="tab-profile" class="tab-view">
-        <div class="form-group">
-            <label>جنسیت شما:</label>
-            <select id="user-gender">
-                <option value="male">پسر 👦</option>
-                <option value="female">دختر 👧</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>شهر شما:</label>
-            <select id="user-city">
-                <option value="بندرعباس">بندرعباس</option>
-                <option value="تهران">تهران</option>
-                <option value="شیراز">شیراز</option>
-                <option value="اصفهان">اصفهان</option>
-                <option value="مشهد">مشهد</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>درباره من (بیوگرافی):</label>
-            <textarea id="user-bio" rows="3" placeholder="توضیح کوتاهی درباره خودتان بنویسید..."></textarea>
-        </div>
-        <button onclick="saveProfile()" class="btn-save">ذخیره تغییرات 💾</button>
-    </div>
+        <!-- تب ۲: علاقه‌مندی‌ها -->
+        <section id="tab-favorites" class="tab-view">
+            <div class="section-title">
+                <h3>علاقه‌مندی‌های شما 🔥</h3>
+                <p>کسانی که لایک کرده‌اید یا شما را لایک کرده‌اند</p>
+            </div>
+            <div id="favorites-container" class="favorites-grid">
+                <!-- دیتای رندر شده -->
+            </div>
+        </section>
 
-    <!-- منوی ناوبری پایین -->
-    <div class="bottom-nav">
-        <div class="nav-item active" data-tab="cards">
-            <span>🔥</span> کارت‌ها
-        </div>
-        <div class="nav-item" data-tab="favorites">
-            <span>❤️</span> علاقه مندی‌ها
-        </div>
-        <div class="nav-item" data-tab="chats">
-            <span>💬</span> گفتگوها
-        </div>
-        <div class="nav-item" data-tab="profile">
-            <span>👤</span> پروفایل
-        </div>
-    </div>
+        <!-- تب ۳: گفتگوها و مسابقه‌ها -->
+        <section id="tab-chats" class="tab-view">
+            <div class="section-title">
+                <h3>گفتگوها 💬</h3>
+                <p>با مچ‌های خود صحبت کنید</p>
+            </div>
+            <div id="chats-container" class="chats-list">
+                <div class="empty-state">
+                    <div class="empty-icon">💌</div>
+                    <h4>هنوز مسابقه‌ای (Match) شکل نگرفته!</h4>
+                    <p>کارت‌های بیشتری را سواپ و لایک کنید تا با افراد جدید مچ شوید.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- تب ۴: پروفایل کاربری -->
+        <section id="tab-profile" class="tab-view">
+            <div class="profile-card-header">
+                <div class="avatar-wrapper">
+                    <img id="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" alt="Avatar">
+                    <span class="online-indicator"></span>
+                </div>
+                <h3 id="profile-name-display">پروفایل من</h3>
+                <p id="profile-id-display">ID: ---</p>
+            </div>
+
+            <form id="profile-form" onsubmit="event.preventDefault(); saveProfile();">
+                <div class="form-group">
+                    <label>جنسیت شما</label>
+                    <select id="user-gender">
+                        <option value="male">پسر 👦</option>
+                        <option value="female">دختر 👧</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>شهر محل سکونت</label>
+                    <select id="user-city">
+                        <option value="بندرعباس">بندرعباس</option>
+                        <option value="تهران">تهران</option>
+                        <option value="شیراز">شیراز</option>
+                        <option value="اصفهان">اصفهان</option>
+                        <option value="مشهد">مشهد</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>درباره من (بیوگرافی)</label>
+                    <textarea id="user-bio" rows="3" placeholder="یک جمله جذاب درباره خودت بنویس..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-action btn-save">
+                    <span>💾</span> ذخیره پروفایل
+                </button>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- نوار ناوبری پایین صفحه (Bottom Navigation Bar) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="cards">
+            <div class="nav-icon">🔥</div>
+            <span>اکسپلور</span>
+        </button>
+        <button class="nav-item" data-tab="favorites">
+            <div class="nav-icon">❤️</div>
+            <span>علاقه‌ها</span>
+        </button>
+        <button class="nav-item" data-tab="chats">
+            <div class="nav-icon">💬</div>
+            <span>گفتگوها</span>
+        </button>
+        <button class="nav-item" data-tab="profile">
+            <div class="nav-icon">👤</div>
+            <span>پروفایل</span>
+        </button>
+    </nav>
 
     <script src="app.js"></script>
 </body>
