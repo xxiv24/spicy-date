@@ -1,24 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-
-// Helper: Generate tokens
-function generateTokens(userId) {
-  const accessToken = jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-  );
-  
-  const refreshToken = jwt.sign(
-    { userId },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
-  );
-  
-  return { accessToken, refreshToken };
-}
 
 // Middleware: Verify token
 function verifyToken(req, res, next) {
@@ -43,86 +25,101 @@ function verifyToken(req, res, next) {
   }
 }
 
-// Login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email and password required' 
-      });
-    }
-    
-    // For now, mock authentication
-    const userId = email.split('@')[0]; // Simple mock
-    const tokens = generateTokens(userId);
-    
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: { email, userId },
-      tokens
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Signup
-router.post('/signup', async (req, res) => {
-  try {
-    const { email, password, firstName } = req.body;
-    
-    if (!email || !password || !firstName) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'All fields required' 
-      });
-    }
-    
-    const userId = email.split('@')[0];
-    const tokens = generateTokens(userId);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Signup successful',
-      data: { email, userId, firstName },
-      tokens
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Get current user
-router.get('/me', verifyToken, (req, res) => {
+// Get profile
+router.get('/profile', verifyToken, (req, res) => {
   res.json({
     success: true,
-    data: { userId: req.userId }
+    data: {
+      userId: req.userId,
+      firstName: 'User',
+      email: 'user@example.com'
+    }
   });
 });
 
-// Refresh token
-router.post('/refresh', (req, res) => {
-  try {
-    const { refreshToken } = req.body;
-    
-    if (!refreshToken) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No refresh token' 
-      });
+// Update profile
+router.post('/profile', verifyToken, (req, res) => {
+  const { firstName, bio, age, gender } = req.body;
+  
+  res.json({
+    success: true,
+    message: 'Profile updated',
+    data: {
+      userId: req.userId,
+      firstName,
+      bio,
+      age,
+      gender
     }
-    
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const tokens = generateTokens(decoded.userId);
-    
-    res.json({ success: true, tokens });
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
+  });
+});
+
+// Get discover users
+router.get('/discover', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    data: [
+      { 
+        userId: 'user1', 
+        firstName: 'John', 
+        age: 25, 
+        gender: 'male' 
+      },
+      { 
+        userId: 'user2', 
+        firstName: 'Jane', 
+        age: 23, 
+        gender: 'female' 
+      }
+    ]
+  });
+});
+
+// Send message
+router.post('/chats/message', verifyToken, (req, res) => {
+  const { receiverId, message } = req.body;
+  
+  if (!receiverId || !message) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Missing fields' 
+    });
   }
+  
+  res.json({
+    success: true,
+    message: 'Message sent',
+    data: {
+      sender: req.userId,
+      receiver: receiverId,
+      text: message,
+      timestamp: new Date()
+    }
+  });
+});
+
+// Get chats
+router.get('/chats', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    data: []
+  });
+});
+
+// VIP status
+router.get('/vip/status', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      isVIP: false,
+      plan: null
+    }
+  });
+});
+
+// Health
+router.get('/health', (req, res) => {
+  res.json({ success: true, status: 'API running' });
 });
 
 module.exports = router;
