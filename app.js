@@ -45,23 +45,24 @@ let MOCK_USERS = [
     }
 ];
 
+// سیستم پاداش دقیق دیلی چک (مقادیر عددی برای اضافه شدن به کیف پول)
 const DAILY_REWARDS = [
-    { day: 1, icon: "⚡", text: "10" },
-    { day: 2, icon: "⭐", text: "+40%" },
-    { day: 3, icon: "⭐", text: "2" },
-    { day: 4, icon: "⚡", text: "100" },
-    { day: 5, icon: "⚡", text: "200" },
-    { day: 6, icon: "⭐", text: "3" },
-    { day: 7, icon: "🔥", text: "+40%" },
-    { day: 8, icon: "⚡", text: "300" },
-    { day: 9, icon: "⭐", text: "2" },
-    { day: 10, icon: "⚡", text: "200" },
-    { day: 11, icon: "👑", text: "+40%" },
-    { day: 12, icon: "⭐", text: "3" },
-    { day: 13, icon: "⚡", text: "500" },
-    { day: 14, icon: "🔥", text: "+40%" },
-    { day: 15, icon: "⭐", text: "5" },
-    { day: 16, icon: "⚡", text: "300" }
+    { day: 1, icon: "⚡", amount: 10, type: "energy", text: "+10" },
+    { day: 2, icon: "⭐", amount: 1, type: "stars", text: "+1" },
+    { day: 3, icon: "⭐", amount: 2, type: "stars", text: "+2" },
+    { day: 4, icon: "⚡", amount: 100, type: "energy", text: "+100" },
+    { day: 5, icon: "⚡", amount: 200, type: "energy", text: "+200" },
+    { day: 6, icon: "⭐", amount: 3, type: "stars", text: "+3" },
+    { day: 7, icon: "🔥", amount: 500, type: "energy", text: "+500" },
+    { day: 8, icon: "⚡", amount: 300, type: "energy", text: "+300" },
+    { day: 9, icon: "⭐", amount: 2, type: "stars", text: "+2" },
+    { day: 10, icon: "⚡", amount: 200, type: "energy", text: "+200" },
+    { day: 11, icon: "👑", amount: 5, type: "stars", text: "+5" },
+    { day: 12, icon: "⭐", amount: 3, type: "stars", text: "+3" },
+    { day: 13, icon: "⚡", amount: 500, type: "energy", text: "+500" },
+    { day: 14, icon: "🔥", amount: 1000, type: "energy", text: "+1000" },
+    { day: 15, icon: "⭐", amount: 5, type: "stars", text: "+5" },
+    { day: 16, icon: "⚡", amount: 300, type: "energy", text: "+300" }
 ];
 
 let suggestedUsersQueue = [];
@@ -69,7 +70,9 @@ let likedUsersList = [];
 let historyStack = [];
 let isVip = false;
 
-// داده‌های Daily Check-in
+// متغیرهای وضعیت کاربر
+let userStars = 0;
+let userEnergy = 50;
 let dailyStreak = 0;
 let lastClaimTimestamp = 0;
 let timerInterval = null;
@@ -80,6 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
     loadProfileCloud();
     fetchSuggestedUsers();
+
+    // مخفی کردن صفحه لودینگ بعد از ۱.۲ ثانیه
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.style.opacity = '0';
+            splash.style.visibility = 'hidden';
+        }
+    }, 1200);
 });
 
 // ۱. انیمیشن موشن ذرات بک‌گراند
@@ -133,7 +145,12 @@ function showToast(text, icon = "✨") {
     setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-// ۲. ذخیره‌سازی ابری در Telegram CloudStorage (پایدار حتی پس از پاک کردن کش)
+function updateHeaderStats() {
+    document.getElementById('user-stars-count').innerText = userStars;
+    document.getElementById('user-energy-count').innerText = userEnergy;
+}
+
+// ۲. ذخیره‌سازی ابری در Telegram CloudStorage
 function saveProfileCloud() {
     const profileData = {
         name: document.getElementById('user-display-name').value,
@@ -144,6 +161,8 @@ function saveProfileCloud() {
         bio: document.getElementById('user-bio').value,
         incognito: document.getElementById('user-incognito').checked,
         avatar: document.getElementById('profile-avatar').src,
+        userStars: userStars,
+        userEnergy: userEnergy,
         dailyStreak: dailyStreak,
         lastClaimTimestamp: lastClaimTimestamp
     };
@@ -181,8 +200,12 @@ function loadProfileCloud() {
         document.getElementById('user-incognito').checked = !!data.incognito;
         if (data.avatar) document.getElementById('profile-avatar').src = data.avatar;
 
+        if (data.userStars !== undefined) userStars = data.userStars;
+        if (data.userEnergy !== undefined) userEnergy = data.userEnergy;
         if (data.dailyStreak !== undefined) dailyStreak = data.dailyStreak;
         if (data.lastClaimTimestamp !== undefined) lastClaimTimestamp = data.lastClaimTimestamp;
+
+        updateHeaderStats();
     };
 
     if (tg && tg.CloudStorage) {
@@ -205,7 +228,7 @@ function saveProfileDirect() {
     }
 }
 
-// ۳. سیستم Daily Check-in حرفه‌ای
+// ۳. سیستم Daily Check-in کامل با منطق دریافت جوایز
 function openDailyModal() {
     document.getElementById('daily-modal').classList.add('active');
     renderDailyGrid();
@@ -235,7 +258,7 @@ function renderDailyGrid() {
 function updateDailyTimer() {
     const btn = document.getElementById('daily-claim-btn');
     const now = Date.now();
-    const cooldown = 24 * 60 * 60 * 1000; // ۲۴ ساعت
+    const cooldown = 24 * 60 * 60 * 1000;
     const diff = now - lastClaimTimestamp;
 
     if (diff >= cooldown || lastClaimTimestamp === 0) {
@@ -268,8 +291,20 @@ function updateDailyTimer() {
 }
 
 function claimDailyReward() {
+    const reward = DAILY_REWARDS[dailyStreak % DAILY_REWARDS.length];
+
+    if (reward.type === "stars") {
+        userStars += reward.amount;
+        showToast(`پاداش امروز: +${reward.amount} ستاره ⭐️`, "⭐");
+    } else {
+        userEnergy += reward.amount;
+        showToast(`پاداش امروز: +${reward.amount} انرژی ⚡`, "⚡");
+    }
+
     lastClaimTimestamp = Date.now();
     dailyStreak = (dailyStreak + 1) % 17;
+    
+    updateHeaderStats();
     saveProfileCloud();
     renderDailyGrid();
     updateDailyTimer();
@@ -277,10 +312,9 @@ function claimDailyReward() {
     if (tg && tg.HapticFeedback) {
         tg.HapticFeedback.notificationOccurred('success');
     }
-    showToast("پاداش روزانه با موفقیت دریافت شد!", "🎁");
 }
 
-// ۴. مدیریت تب‌ها و بخش‌های دیگر
+// ۴. مدیریت تب‌ها و بخش‌های کاربردی
 function setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const tabViews = document.querySelectorAll('.tab-view');
@@ -407,7 +441,6 @@ function handleSuperLike() {
 function handleRewind() {
     if (!isVip) {
         showToast("بازگردانی مخصوص کاربران VIP است!", "👑");
-        openVipModal();
         return;
     }
     if (historyStack.length === 0) return;
@@ -452,17 +485,6 @@ function handleAvatarChange(event) {
         };
         reader.readAsDataURL(file);
     }
-}
-
-function openVipModal() { document.getElementById('vip-modal').classList.add('active'); }
-function closeVipModal() { document.getElementById('vip-modal').classList.remove('active'); }
-
-function processPayment(starsCount, days) {
-    closeVipModal();
-    showToast(`پرداخت ${starsCount} استارز انجام شد. VIP فعال شد!`, "⭐️");
-    isVip = true;
-    document.getElementById('vip-status-badge').classList.add('active');
-    document.getElementById('vip-status-badge').innerHTML = '👑 VIP';
 }
 
 function shareReferralLink() {
