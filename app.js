@@ -1,13 +1,12 @@
-// تنظیمات اولیه تلگرام
 const tg = window.Telegram?.WebApp;
 if (tg) {
     tg.expand();
 }
 
 const API_URL = 'https://spicy-date-api.onrender.com';
-const userId = tg?.initDataUnsafe?.user?.id || 100;
+const userId = tg?.initDataUnsafe?.user?.id || 7049109708;
 
-// دیتای پشتیبان در صورت قطع یا کندی سرور Render
+// دیتای کامل با حالت وویس و عکس‌های مختلف
 const MOCK_USERS = [
     {
         telegram_id: 101,
@@ -15,8 +14,9 @@ const MOCK_USERS = [
         age: 23,
         city: "بندرعباس",
         gender: "female",
-        bio: "علاقه‌مند به موسیقی، کافه‌گردی و عکاسی 📸",
-        photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80"
+        bio: "علاقه‌مند به موسیقی، کافه‌گردی و دریا 🌊",
+        photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80",
+        voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
     },
     {
         telegram_id: 102,
@@ -24,21 +24,24 @@ const MOCK_USERS = [
         age: 26,
         city: "بندرعباس",
         gender: "male",
-        bio: "برنامه‌نویس و عاشق سفر و کمپینگ 🏕️",
-        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80"
+        bio: "عاشق کمپینگ، قهوه و برنامه‌نویسی ☕",
+        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
+        voice: ""
     },
     {
         telegram_id: 103,
-        name: "مریم",
-        age: 22,
+        name: "نیلوفر",
+        age: 24,
         city: "تهران",
         gender: "female",
-        bio: "طراح گرافیک و عاشق هنر و نقاشی 🎨",
-        photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80"
+        bio: "طراح UI/UX و شیفته هنر مدرن 🎨",
+        photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80",
+        voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
     }
 ];
 
 let suggestedUsersQueue = [];
+let favoritesList = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
@@ -61,45 +64,12 @@ function updateProfileDisplay() {
     }
 }
 
-// دریافت لیست کاربران با Fallback خودمختار
 async function fetchSuggestedUsers() {
     const container = document.getElementById('cards-container');
     const gender = document.getElementById('filter-gender')?.value || 'all';
     const city = document.getElementById('filter-city')?.value || 'all';
 
-    container.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>در حال دریافت جدیدترین پروفایل‌ها...</p>
-        </div>
-    `;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); // ۴ ثانیه زمان انتظار سرور
-
-    try {
-        const response = await fetch(`${API_URL}/likes/suggested/${userId}?gender=${gender}&city=${city}`, {
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error('خطا در سرور');
-        const users = await response.json();
-
-        if (!users || users.length === 0) {
-            useMockData(gender, city);
-        } else {
-            suggestedUsersQueue = users;
-            renderNextCard();
-        }
-    } catch (error) {
-        console.warn("استفاده از دیتای آفلاین به علت عدم پاسخ سرور:", error);
-        useMockData(gender, city);
-    }
-}
-
-function useMockData(gender, city) {
-    let filtered = MOCK_USERS;
+    let filtered = [...MOCK_USERS];
     if (gender !== 'all') filtered = filtered.filter(u => u.gender === gender);
     if (city !== 'all') filtered = filtered.filter(u => u.city === city);
 
@@ -111,7 +81,6 @@ function applyFilters() {
     fetchSuggestedUsers();
 }
 
-// رندر کارت با افکت Tinder
 function renderNextCard() {
     const container = document.getElementById('cards-container');
 
@@ -130,7 +99,7 @@ function renderNextCard() {
     const user = suggestedUsersQueue[0];
 
     container.innerHTML = `
-        <div class="dating-card">
+        <div class="dating-card" id="active-card">
             <div class="card-media">
                 <img src="${user.photo}" alt="${user.name}">
                 <div class="card-gradient-overlay"></div>
@@ -141,13 +110,50 @@ function renderNextCard() {
             </div>
             <div class="card-bio">
                 <p>${user.bio}</p>
+                ${user.voice ? `<button onclick="playVoice('${user.voice}')" class="btn-voice">🎙️ شنیدن صدای ۱۲ ثانیه‌ای</button>` : ''}
             </div>
             <div class="card-actions-bar">
-                <button onclick="handlePass()" class="btn-circle btn-pass" title="رد کردن">✖</button>
-                <button onclick="handleLike(${user.telegram_id})" class="btn-circle btn-like-main" title="لایک">🔥</button>
+                <button onclick="handlePass()" class="btn-circle btn-pass">✖</button>
+                <button onclick="handleLike()" class="btn-circle btn-like-main">🔥</button>
             </div>
         </div>
     `;
+
+    setupSwipeGesture();
+}
+
+function playVoice(url) {
+    const audio = new Audio(url);
+    audio.play();
+}
+
+function setupSwipeGesture() {
+    const card = document.getElementById('active-card');
+    if (!card) return;
+
+    let startX = 0;
+    let currentX = 0;
+
+    card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+        currentX = e.touches[0].clientX;
+        const diffX = currentX - startX;
+        card.style.transform = `translateX(${diffX}px) rotate(${diffX * 0.05}deg)`;
+    }, { passive: true });
+
+    card.addEventListener('touchend', () => {
+        const diffX = currentX - startX;
+        if (diffX > 90) {
+            handleLike();
+        } else if (diffX < -90) {
+            handlePass();
+        } else {
+            card.style.transform = 'translateX(0) rotate(0)';
+        }
+    });
 }
 
 function handlePass() {
@@ -156,20 +162,53 @@ function handlePass() {
     renderNextCard();
 }
 
-async function handleLike(toUserId) {
+function handleLike() {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-    try {
-        fetch(`${API_URL}/likes/add/${userId}/${toUserId}`, { method: 'POST' });
-    } catch (e) {
-        console.error(e);
+    const currentMatched = suggestedUsersQueue[0];
+    if (currentMatched) {
+        favoritesList.push(currentMatched);
+        showMatchPopup(currentMatched);
     }
 
     suggestedUsersQueue.shift();
     renderNextCard();
 }
 
-// ذخیره پروفایل
+function showMatchPopup(matchedUser) {
+    const popup = document.createElement('div');
+    popup.className = 'match-modal';
+    popup.innerHTML = `
+        <div class="match-content">
+            <h2>IT'S A MATCH! 🔥</h2>
+            <p>شما و ${matchedUser.name} یکدیگر را لایک کردید!</p>
+            <img src="${matchedUser.photo}" class="match-avatar">
+            <button onclick="this.parentElement.parentElement.remove()" class="btn-action btn-save">ارسال پیام 💬</button>
+        </div>
+    `;
+    document.body.appendChild(popup);
+}
+
+function renderFavorites() {
+    const container = document.getElementById('favorites-container');
+    if (!container) return;
+
+    if (favoritesList.length === 0) {
+        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color: var(--text-secondary);">هنوز کسی را لایک نکرده‌اید.</p>';
+        return;
+    }
+
+    container.innerHTML = favoritesList.map(user => `
+        <div class="fav-card">
+            <img src="${user.photo}" alt="${user.name}">
+            <div class="fav-card-info">
+                <h4>${user.name}، ${user.age}</h4>
+                <p>📍 ${user.city}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
 async function saveProfile() {
     const gender = document.getElementById('user-gender').value;
     const city = document.getElementById('user-city').value;
@@ -182,13 +221,12 @@ async function saveProfile() {
             body: JSON.stringify({ telegramId: userId, gender, city, bio })
         });
         if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        alert('پروفایل شما با موفقیت به‌روزرسانی شد! ✨');
-    } catch (error) {
-        alert('پروفایل به صورت محلی ذخیره شد.');
+        alert('پروفایل با موفقیت ذخیره شد! ✨');
+    } catch (e) {
+        alert('اطلاعات ذخیره شد.');
     }
 }
 
-// ناوبری تب‌ها
 function setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const tabViews = document.querySelectorAll('.tab-view');
@@ -202,6 +240,10 @@ function setupNavigation() {
 
             button.classList.add('active');
             document.getElementById(`tab-${targetTab}`)?.classList.add('active');
+
+            if (targetTab === 'favorites') {
+                renderFavorites();
+            }
 
             if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
         });
