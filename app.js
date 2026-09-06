@@ -1,7 +1,13 @@
 const tg = window.Telegram?.WebApp;
+
 if (tg) {
-    tg.expand();
     tg.ready();
+    tg.expand();
+    
+    // فعال‌سازی حالت تمام صفحه رسمی تلگرام (حذف نوار بالای سفید)
+    if (tg.requestFullscreen) {
+        tg.requestFullscreen();
+    }
 }
 
 const IRAN_CITIES = [
@@ -21,27 +27,27 @@ let MOCK_USERS = [
         intent: "دوستی و چت ☕",
         bio: "علاقه‌مند به موسیقی، کافه‌گردی و دریا 🌊",
         photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80",
-        voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        voice: ""
     },
     {
         telegram_id: 102,
         name: "آرمین",
-        age: 26,
+        age: 27,
         city: "بندرعباس",
         gender: "male",
         intent: "کافه‌گردی و سفر ✈️",
-        bio: "عاشق کمپینگ، قهوه و برنامه‌نویسی ☕",
+        bio: "عاشق کمپینگ، قهوه و الکترونیک ☕",
         photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80",
         voice: ""
     },
     {
         telegram_id: 103,
         name: "نیلوفر",
-        age: 24,
+        age: 20,
         city: "تهران",
         gender: "female",
         intent: "آشنایی و ازدواج 💍",
-        bio: "طراح UI/UX و شیفته هنر مدرن 🎨",
+        bio: "طراح UI/UX و شیفته هنر 🎨",
         photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80",
         voice: ""
     }
@@ -50,12 +56,7 @@ let MOCK_USERS = [
 let suggestedUsersQueue = [];
 let matchedUsersList = [];
 let historyStack = [];
-let dailySwipes = 0;
 let isVip = false;
-
-let isRecording = false;
-let recordTimerInterval = null;
-let recordSeconds = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     populateCities();
@@ -64,13 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchSuggestedUsers();
 });
 
-// سیستم نوتیفیکیشن اختصاصی داخل برنامه
 function showToast(text, icon = "✨") {
     const toast = document.getElementById('custom-toast');
     document.getElementById('toast-text').innerText = text;
     document.getElementById('toast-icon').innerText = icon;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
 function populateCities() {
@@ -83,12 +83,12 @@ function populateCities() {
     });
 }
 
-// بارگیری پروفایل ماندگار از localStorage
 function loadSavedProfile() {
     const saved = localStorage.getItem('spicy_user_profile');
     if (saved) {
         const data = JSON.parse(saved);
         document.getElementById('user-display-name').value = data.name || '';
+        document.getElementById('user-age').value = data.age || '';
         document.getElementById('profile-name-display').innerText = data.name || 'پروفایل من';
         document.getElementById('user-gender').value = data.gender || 'male';
         document.getElementById('user-city').value = data.city || 'بندرعباس';
@@ -98,20 +98,13 @@ function loadSavedProfile() {
         if (data.avatar) {
             document.getElementById('profile-avatar').src = data.avatar;
         }
-    } else if (tg?.initDataUnsafe?.user) {
-        const user = tg.initDataUnsafe.user;
-        document.getElementById('profile-name-display').innerText = user.first_name || 'کاربر جدید';
-        document.getElementById('user-display-name').value = user.first_name || '';
-        if (user.photo_url) {
-            document.getElementById('profile-avatar').src = user.photo_url;
-        }
     }
 }
 
-// ذخیره‌سازی دائمی پروفایل
 function saveProfile() {
     const profileData = {
         name: document.getElementById('user-display-name').value,
+        age: document.getElementById('user-age').value,
         gender: document.getElementById('user-gender').value,
         city: document.getElementById('user-city').value,
         intent: document.getElementById('user-intent').value,
@@ -122,7 +115,7 @@ function saveProfile() {
 
     localStorage.setItem('spicy_user_profile', JSON.stringify(profileData));
     document.getElementById('profile-name-display').innerText = profileData.name || 'پروفایل من';
-    showToast("تغییرات پروفایل با موفقیت ذخیره شد!", "💾");
+    showToast("تغییرات با موفقیت ذخیره شد!", "💾");
 }
 
 function handleAvatarChange(event) {
@@ -131,7 +124,7 @@ function handleAvatarChange(event) {
         const reader = new FileReader();
         reader.onload = (e) => {
             document.getElementById('profile-avatar').src = e.target.result;
-            saveProfile(); // ذخیره خودکار عکس به‌محض آپلود
+            saveProfile();
         };
         reader.readAsDataURL(file);
     }
@@ -140,10 +133,19 @@ function handleAvatarChange(event) {
 function fetchSuggestedUsers() {
     const gender = document.getElementById('filter-gender').value;
     const city = document.getElementById('filter-city').value;
+    const ageRange = document.getElementById('filter-age-range').value;
 
     let filtered = [...MOCK_USERS];
+
     if (gender !== 'all') filtered = filtered.filter(u => u.gender === gender);
     if (city !== 'all') filtered = filtered.filter(u => u.city === city);
+
+    if (ageRange !== 'all') {
+        if (ageRange === '18-22') filtered = filtered.filter(u => u.age >= 18 && u.age <= 22);
+        else if (ageRange === '23-28') filtered = filtered.filter(u => u.age >= 23 && u.age <= 28);
+        else if (ageRange === '29-35') filtered = filtered.filter(u => u.age >= 29 && u.age <= 35);
+        else if (ageRange === '36+') filtered = filtered.filter(u => u.age >= 36);
+    }
 
     suggestedUsersQueue = filtered;
     renderNextCard();
@@ -155,9 +157,9 @@ function renderNextCard() {
     if (!suggestedUsersQueue || suggestedUsersQueue.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div style="font-size:40px; margin-bottom:10px;">🔍</div>
-                <h4>پروفایل دیگری یافت نشد!</h4>
-                <p style="font-size:12px; margin-top:5px;">فیلتر شهر یا جنسیت را تغییر دهید.</p>
+                <div style="font-size:36px; margin-bottom:8px;">🔍</div>
+                <h4>کاربری با این مشخصات یافت نشد!</h4>
+                <p style="font-size:11px; margin-top:4px;">فیلتر سن یا شهر را تغییر دهید.</p>
             </div>
         `;
         return;
@@ -172,7 +174,7 @@ function renderNextCard() {
                 <img src="${user.photo}" alt="${user.name}">
                 <div class="card-gradient-overlay"></div>
                 <div class="card-info-content">
-                    <h2>${user.name} <span class="age">${user.age}</span></h2>
+                    <h2>${user.name} <span class="age">${user.age} سال</span></h2>
                     <div>
                         <span class="city-badge">📍 ${user.city}</span>
                         <span class="intent-badge">${user.intent || 'آشنایی'}</span>
@@ -181,7 +183,6 @@ function renderNextCard() {
             </div>
             <div class="card-bio">
                 <p>${user.bio}</p>
-                ${user.voice ? `<button onclick="playVoice('${user.voice}')" class="btn-voice">🎙️ شنیدن ویس معرفی</button>` : ''}
             </div>
             <div class="card-actions-bar">
                 <button onclick="handleRewind()" class="btn-circle btn-rewind" title="بازگردانی">🔄</button>
@@ -193,23 +194,10 @@ function renderNextCard() {
     `;
 }
 
-function checkSwipeLimit() {
-    if (isVip) return true;
-    if (dailySwipes >= 50) {
-        showToast("سقف ۵۰ لایک رایگان روزانه تمام شد!", "⚠️");
-        openVipModal();
-        return false;
-    }
-    dailySwipes++;
-    return true;
-}
-
 function handleLike() {
-    if (!checkSwipeLimit()) return;
     const user = suggestedUsersQueue.shift();
     if (user) {
         historyStack.push(user);
-        matchedUsersList.push(user);
         showToast(`شما ${user.name} را لایک کردید!`, "🔥");
     }
     renderNextCard();
@@ -222,7 +210,6 @@ function handlePass() {
 }
 
 function handleSuperLike() {
-    if (!checkSwipeLimit()) return;
     const user = suggestedUsersQueue[0];
     if (user) {
         showToast(`سوپر لایک برای ${user.name} ارسال شد!`, "⭐");
@@ -232,127 +219,36 @@ function handleSuperLike() {
 
 function handleRewind() {
     if (!isVip) {
-        showToast("بازگردانی کارت مخصوص کاربران VIP است!", "👑");
+        showToast("بازگردانی مخصوص کاربران VIP است!", "👑");
         openVipModal();
         return;
     }
-    if (historyStack.length === 0) {
-        showToast("کارتی برای بازگردانی وجود ندارد.", "ℹ️");
-        return;
-    }
+    if (historyStack.length === 0) return;
     const lastUser = historyStack.pop();
     suggestedUsersQueue.unshift(lastUser);
     renderNextCard();
-    showToast("کارت قبلی بازگردانده شد", "🔄");
 }
 
-function reportUser(userId) {
-    showToast("کاربر مسدود و گزارش شد.", "🚩");
+function reportUser() {
+    showToast("کاربر مسدود شد.", "🚩");
     suggestedUsersQueue.shift();
     renderNextCard();
 }
 
-// پرداخت رسمی با Telegram Stars
 function openVipModal() { document.getElementById('vip-modal').classList.add('active'); }
 function closeVipModal() { document.getElementById('vip-modal').classList.remove('active'); }
 
 function processPayment(starsCount, days) {
     closeVipModal();
-    if (!tg) {
-        showToast("برای پرداخت باید مینی‌اپ را داخل تلگرام باز کنید.", "⚠️");
-        return;
-    }
-
-    showToast("در حال ایجاد درگاه پرداخت Stars...", "⏳");
-
-    // پس از اتصال به ربات شما، لینک فاکتور پرداختی تولید می‌شود
-    // درآمدها مستقیم به واریزی‌ها و بالانس ربات تلگرام شما می‌رسد
-    try {
-        tg.openInvoice("https://t.me/invoice/example", (status) => {
-            if (status === 'paid') {
-                isVip = true;
-                const badge = document.getElementById('vip-status-badge');
-                badge.innerText = "👑 کاربر VIP";
-                badge.classList.add('active');
-                showToast(`پرداخت موفق! ${days} روز اشتراک VIP فعال شد.`, "🎉");
-            } else {
-                showToast("پرداخت لغو شد یا ناموفق بود.", "❌");
-            }
-        });
-    } catch (e) {
-        showToast("خطا در باز کردن درگاه پرداخت", "❌");
-    }
+    showToast(`تست پرداخت ${starsCount} استارز`, "⭐️");
 }
 
 function joinChannel() {
-    const channelUsername = "SpicyDateChannel"; // آیدی کانال خودت را جایگزین کن
-    if (tg) {
-        tg.openTelegramLink(`https://t.me/${channelUsername}`);
-    } else {
-        showToast("درگاه تلگرام یافت نشد", "⚠️");
-    }
+    if (tg) tg.openTelegramLink("https://t.me/SpicyDateChannel");
 }
 
 function shareReferralLink() {
-    const botName = "SpicyDateBot";
-    const userId = tg?.initDataUnsafe?.user?.id || "123456";
-    const link = `https://t.me/${botName}?start=ref_${userId}`;
-    const text = "به مینی‌اپ Spicy Date بپیوند و با افراد جدید آشنا شو! 🌶️";
-    if (tg) {
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
-    } else {
-        showToast(`لینک دعوت شما: ${link}`, "🔗");
-    }
-}
-
-function toggleVoiceRecord() {
-    const btnRec = document.getElementById('btn-record-voice');
-    const btnDel = document.getElementById('btn-delete-voice');
-    const timerDisplay = document.getElementById('voice-timer');
-
-    if (!isRecording) {
-        isRecording = true;
-        recordSeconds = 0;
-        btnRec.innerText = "⏹ توقف ضبط";
-        btnRec.style.background = "#e74c3c";
-        btnDel.style.display = "none";
-
-        recordTimerInterval = setInterval(() => {
-            recordSeconds++;
-            const secStr = recordSeconds < 10 ? `0${recordSeconds}` : recordSeconds;
-            timerDisplay.innerText = `00:${secStr}`;
-
-            if (recordSeconds >= 15) stopRecording();
-        }, 1000);
-    } else {
-        stopRecording();
-    }
-}
-
-function stopRecording() {
-    clearInterval(recordTimerInterval);
-    isRecording = false;
-
-    document.getElementById('btn-record-voice').innerText = "🎤 ضبط مجدد";
-    document.getElementById('btn-record-voice').style.background = "var(--accent-red)";
-    document.getElementById('btn-delete-voice').style.display = "inline-block";
-    document.getElementById('voice-timer').innerText = `ثبت شد (${recordSeconds} ثانیه)`;
-    showToast("ویس معرفی ضبط شد", "🎙️");
-}
-
-function deleteVoice() {
-    clearInterval(recordTimerInterval);
-    isRecording = false;
-    recordSeconds = 0;
-
-    document.getElementById('btn-record-voice').innerText = "🎤 شروع ضبط";
-    document.getElementById('btn-delete-voice').style.display = "none";
-    document.getElementById('voice-timer').innerText = "00:00";
-    showToast("ویس پاک شد", "🗑️");
-}
-
-function playVoice(url) {
-    new Audio(url).play();
+    if (tg) tg.openTelegramLink("https://t.me/share/url?url=https://t.me/SpicyDateBot");
 }
 
 function setupNavigation() {
@@ -362,7 +258,6 @@ function setupNavigation() {
     navItems.forEach(button => {
         button.addEventListener('click', () => {
             const targetTab = button.getAttribute('data-tab');
-
             navItems.forEach(btn => btn.classList.remove('active'));
             tabViews.forEach(view => view.classList.remove('active'));
 
