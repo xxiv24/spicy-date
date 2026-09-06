@@ -1,15 +1,17 @@
 {
   "name": "spicy-date-backend",
   "version": "1.0.0",
-  "description": "Backend API for Spicy Date Mini App",
+  "description": "Backend server for Spicy Date Telegram Mini App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.3.0"
+    "mongoose": "^8.3.1",
+    "node-telegram-bot-api": "^0.66.0"
   }
 }
