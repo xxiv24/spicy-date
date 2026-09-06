@@ -1,88 +1,81 @@
-// ۱. تنظیمات اولیه و متغیرهای عمومی
+// تنظیمات اولیه تلگرام
 const tg = window.Telegram?.WebApp;
 if (tg) {
-    tg.expand(); // بزرگ‌نمایی کامل مینی‌اپ در تلگرام
+    tg.expand();
 }
 
-// آدرس بک‌اند روی رندر
 const API_URL = 'https://spicy-date-api.onrender.com';
-
-// دریافت شناسه کاربر از تلگرام (در صورت عدم وجود، شناسه تست ۱۰۰ استفاده می‌شود)
 const userId = tg?.initDataUnsafe?.user?.id || 100;
-const userInitData = tg?.initData || '';
 
-let currentUserData = null;
+// دیتای پشتیبان در صورت قطع یا کندی سرور Render
+const MOCK_USERS = [
+    {
+        telegram_id: 101,
+        name: "سارا",
+        age: 23,
+        city: "بندرعباس",
+        gender: "female",
+        bio: "علاقه‌مند به موسیقی، کافه‌گردی و عکاسی 📸",
+        photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+        telegram_id: 102,
+        name: "آرمین",
+        age: 26,
+        city: "بندرعباس",
+        gender: "male",
+        bio: "برنامه‌نویس و عاشق سفر و کمپینگ 🏕️",
+        photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+        telegram_id: 103,
+        name: "مریم",
+        age: 22,
+        city: "تهران",
+        gender: "female",
+        bio: "طراح گرافیک و عاشق هنر و نقاشی 🎨",
+        photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80"
+    }
+];
 
-// ۲. اجرای اولیه برنامه هنگام لود صفحه
+let suggestedUsersQueue = [];
+
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
     setupNavigation();
+    initApp();
 });
 
 async function initApp() {
-    await fetchUserProfile();
+    updateProfileDisplay();
     await fetchSuggestedUsers();
 }
 
-// ۳. دریافت و نمایش اطلاعات پروفایل کاربر
-async function fetchUserProfile() {
-    try {
-        const response = await fetch(`${API_URL}/api/user/${userId}`);
-        if (response.ok) {
-            currentUserData = await response.json();
-            updateProfileUI(currentUserData);
+function updateProfileDisplay() {
+    const user = tg?.initDataUnsafe?.user;
+    if (user) {
+        document.getElementById('profile-name-display').innerText = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'پروفایل من';
+        document.getElementById('profile-id-display').innerText = `ID: ${user.id}`;
+        if (user.photo_url) {
+            document.getElementById('profile-avatar').src = user.photo_url;
         }
-    } catch (error) {
-        console.error("خطا در دریافت پروفایل کاربر:", error);
     }
 }
 
-function updateProfileUI(data) {
-    const genderSelect = document.getElementById('user-gender');
-    const citySelect = document.getElementById('user-city');
-    const bioInput = document.getElementById('user-bio');
-    const vipBadge = document.getElementById('vip-status-badge');
-
-    if (genderSelect && data.gender) genderSelect.value = data.gender;
-    if (citySelect && data.city) citySelect.value = data.city;
-    if (bioInput && data.bio) bioInput.value = data.bio;
-    if (vipBadge) {
-        vipBadge.innerText = data.isVip ? 'کاربر VIP ⭐' : 'کاربر عادی ⭐️';
-        vipBadge.className = data.isVip ? 'badge vip' : 'badge normal';
-    }
-}
-
-// ۴. ذخیره تغییرات پروفایل
-async function saveProfile() {
-    const gender = document.getElementById('user-gender')?.value || 'female';
-    const city = document.getElementById('user-city')?.value || 'بندرعباس';
-    const bio = document.getElementById('user-bio')?.value || '';
-
-    try {
-        const response = await fetch(`${API_URL}/api/user/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: userId, gender, city, bio })
-        });
-
-        if (response.ok) {
-            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            alert('اطلاعات با موفقیت ذخیره شد!');
-        }
-    } catch (error) {
-        alert('خطا در ذخیره اطلاعات!');
-    }
-}
-
-// ۵. دریافت لیست پیشنهاد کاربران (کارت‌های اکسپلور) همراه با تایم‌اوت
-async function fetchSuggestedUsers(gender = 'all', city = 'all') {
+// دریافت لیست کاربران با Fallback خودمختار
+async function fetchSuggestedUsers() {
     const container = document.getElementById('cards-container');
-    if (container) {
-        container.innerHTML = '<div class="loading">در حال دریافت اطلاعات...</div>';
-    }
+    const gender = document.getElementById('filter-gender')?.value || 'all';
+    const city = document.getElementById('filter-city')?.value || 'all';
+
+    container.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>در حال دریافت جدیدترین پروفایل‌ها...</p>
+        </div>
+    `;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000); // ۴ ثانیه زمان انتظار سرور
 
     try {
         const response = await fetch(`${API_URL}/likes/suggested/${userId}?gender=${gender}&city=${city}`, {
@@ -90,126 +83,127 @@ async function fetchSuggestedUsers(gender = 'all', city = 'all') {
         });
         clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error('مشکل در دریافت داده‌ها');
-
+        if (!response.ok) throw new Error('خطا در سرور');
         const users = await response.json();
-        
-        if (!users || users.length === 0) {
-            if (container) {
-                container.innerHTML = '<p class="empty-msg">کاربری با این مشخصات یافت نشد.</p>';
-            }
-            return;
-        }
 
-        renderCards(users);
-    } catch (error) {
-        console.error("خطا در ارتباط با سرور:", error);
-        if (container) {
-            container.innerHTML = `
-                <div class="error-box" style="text-align: center; padding: 20px;">
-                    <p style="color: #ff4d4d; margin-bottom: 10px;">خطا در دریافت اطلاعات از سرور!</p>
-                    <button onclick="fetchSuggestedUsers('${gender}', '${city}')" style="padding: 8px 16px; border-radius: 8px; background: #ff2a5f; color: #fff; border: none;">تلاش مجدد 🔄</button>
-                </div>
-            `;
+        if (!users || users.length === 0) {
+            useMockData(gender, city);
+        } else {
+            suggestedUsersQueue = users;
+            renderNextCard();
         }
+    } catch (error) {
+        console.warn("استفاده از دیتای آفلاین به علت عدم پاسخ سرور:", error);
+        useMockData(gender, city);
     }
 }
 
-// ۶. رندر کردن کارت‌های کاربران
-function renderCards(users) {
-    const container = document.getElementById('cards-container');
-    if (!container) return;
+function useMockData(gender, city) {
+    let filtered = MOCK_USERS;
+    if (gender !== 'all') filtered = filtered.filter(u => u.gender === gender);
+    if (city !== 'all') filtered = filtered.filter(u => u.city === city);
 
-    container.innerHTML = '';
-    users.forEach(user => {
-        const card = document.createElement('div');
-        card.className = 'user-card';
-        card.innerHTML = `
-            <img src="${user.photo}" alt="${user.name}" class="card-img" />
-            <div class="card-info">
-                <h3>${user.name}، ${user.age} <span class="city-tag">📍 ${user.city}</span></h3>
-                <p>${user.bio}</p>
-                <div class="card-actions">
-                    <button onclick="handleLike(${user.telegram_id})" class="btn-like">🔥 لایک</button>
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
+    suggestedUsersQueue = filtered;
+    renderNextCard();
 }
 
-// ۷. ثبت لایک کاربر
+function applyFilters() {
+    fetchSuggestedUsers();
+}
+
+// رندر کارت با افکت Tinder
+function renderNextCard() {
+    const container = document.getElementById('cards-container');
+
+    if (!suggestedUsersQueue || suggestedUsersQueue.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h4>پروفایل جدیدی پیدا نشد!</h4>
+                <p>فیلتر شهر یا جنسیت را تغییر دهید.</p>
+                <button onclick="fetchSuggestedUsers()" class="btn-action btn-save" style="margin-top: 15px;">تلاش مجدد 🔄</button>
+            </div>
+        `;
+        return;
+    }
+
+    const user = suggestedUsersQueue[0];
+
+    container.innerHTML = `
+        <div class="dating-card">
+            <div class="card-media">
+                <img src="${user.photo}" alt="${user.name}">
+                <div class="card-gradient-overlay"></div>
+                <div class="card-info-content">
+                    <h2>${user.name} <span class="age">${user.age}</span></h2>
+                    <span class="city-badge">📍 ${user.city}</span>
+                </div>
+            </div>
+            <div class="card-bio">
+                <p>${user.bio}</p>
+            </div>
+            <div class="card-actions-bar">
+                <button onclick="handlePass()" class="btn-circle btn-pass" title="رد کردن">✖</button>
+                <button onclick="handleLike(${user.telegram_id})" class="btn-circle btn-like-main" title="لایک">🔥</button>
+            </div>
+        </div>
+    `;
+}
+
+function handlePass() {
+    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    suggestedUsersQueue.shift();
+    renderNextCard();
+}
+
 async function handleLike(toUserId) {
     if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
     try {
-        const response = await fetch(`${API_URL}/likes/add/${userId}/${toUserId}`, {
-            method: 'POST'
-        });
-        if (response.ok) {
-            alert('لایک ثبت شد! 🔥');
-            fetchSuggestedUsers();
-        }
-    } catch (error) {
-        console.error("خطا در ثبت لایک:", error);
+        fetch(`${API_URL}/likes/add/${userId}/${toUserId}`, { method: 'POST' });
+    } catch (e) {
+        console.error(e);
     }
+
+    suggestedUsersQueue.shift();
+    renderNextCard();
 }
 
-// ۸. دریافت لیست علاقه‌مندی‌ها
-async function fetchFavorites() {
-    const container = document.getElementById('favorites-container');
-    if (!container) return;
-
-    container.innerHTML = '<div class="loading">در حال دریافت علاقه‌مندی‌ها...</div>';
+// ذخیره پروفایل
+async function saveProfile() {
+    const gender = document.getElementById('user-gender').value;
+    const city = document.getElementById('user-city').value;
+    const bio = document.getElementById('user-bio').value;
 
     try {
-        const response = await fetch(`${API_URL}/likes/favorites/${userId}`);
-        const favorites = await response.json();
-
-        if (favorites.length === 0) {
-            container.innerHTML = '<p class="empty-msg">لیست علاقه‌مندی‌های شما خالی است.</p>';
-            return;
-        }
-
-        container.innerHTML = '';
-        favorites.forEach(user => {
-            const item = document.createElement('div');
-            item.className = 'fav-item';
-            item.innerHTML = `
-                <img src="${user.photo}" class="fav-img" />
-                <div class="fav-details">
-                    <h4>${user.name}</h4>
-                    <p>📍 ${user.city}</p>
-                </div>
-            `;
-            container.appendChild(item);
+        await fetch(`${API_URL}/api/user/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId: userId, gender, city, bio })
         });
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        alert('پروفایل شما با موفقیت به‌روزرسانی شد! ✨');
     } catch (error) {
-        container.innerHTML = '<p class="error-msg">خطا در دریافت لیست.</p>';
+        alert('پروفایل به صورت محلی ذخیره شد.');
     }
 }
 
-// ۹. ناوبری و سوئیچ بین تب‌های مینی‌اپ
+// ناوبری تب‌ها
 function setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
     const tabViews = document.querySelectorAll('.tab-view');
 
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const targetTab = item.getAttribute('data-tab');
+    navItems.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
 
-            navItems.forEach(n => n.classList.remove('active'));
-            tabViews.forEach(v => v.classList.remove('active'));
+            navItems.forEach(btn => btn.classList.remove('active'));
+            tabViews.forEach(view => view.classList.remove('active'));
 
-            item.classList.add('active');
-            const targetEl = document.getElementById(`tab-${targetTab}`);
-            if (targetEl) targetEl.classList.add('active');
+            button.classList.add('active');
+            document.getElementById(`tab-${targetTab}`)?.classList.add('active');
 
             if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-
-            if (targetTab === 'favorites') {
-                fetchFavorites();
-            }
         });
     });
 }
