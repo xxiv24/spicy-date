@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- هدر شیک و مدرن -->
+    <!-- هدر برنامه -->
     <header class="app-header">
         <div class="brand">
             <span class="brand-icon">🌶️</span>
@@ -24,7 +24,7 @@
 
         <!-- تب ۱: اکسپلور و سواپ کارت‌ها -->
         <section id="tab-cards" class="tab-view active">
-            <!-- نوار فیلتر بالای کارت‌ها -->
+            <!-- فیلترها -->
             <div class="filter-bar">
                 <select id="filter-gender" onchange="applyFilters()">
                     <option value="all">همه جنسیت‌ها 👥</option>
@@ -41,11 +41,11 @@
                 </select>
             </div>
 
-            <!-- کانتینر کارت‌ها -->
+            <!-- کانتینر اصلی کارت‌ها -->
             <div id="cards-container" class="cards-wrapper">
                 <div class="loading-spinner">
                     <div class="spinner"></div>
-                    <p>در حال یافتن پارتنرهای نزدیک...</p>
+                    <p>در حال دریافت جدیدترین پروفایل‌ها...</p>
                 </div>
             </div>
         </section>
@@ -57,11 +57,11 @@
                 <p>کسانی که لایک کرده‌اید یا شما را لایک کرده‌اند</p>
             </div>
             <div id="favorites-container" class="favorites-grid">
-                <!-- دیتای رندر شده -->
+                <!-- دیتا درون JS رندر می‌شود -->
             </div>
         </section>
 
-        <!-- تب ۳: گفتگوها و مسابقه‌ها -->
+        <!-- تب ۳: گفتگوها -->
         <section id="tab-chats" class="tab-view">
             <div class="section-title">
                 <h3>گفتگوها 💬</h3>
@@ -76,7 +76,7 @@
             </div>
         </section>
 
-        <!-- تب ۴: پروفایل کاربری -->
+        <!-- تب ۴: پروفایل -->
         <section id="tab-profile" class="tab-view">
             <div class="profile-card-header">
                 <div class="avatar-wrapper">
@@ -120,7 +120,7 @@
 
     </main>
 
-    <!-- نوار ناوبری پایین صفحه (Bottom Navigation Bar) -->
+    <!-- نوار ناوبری پایین -->
     <nav class="bottom-nav">
         <button class="nav-item active" data-tab="cards">
             <div class="nav-icon">🔥</div>
