@@ -6,7 +6,6 @@ if (tg) {
 const API_URL = 'https://spicy-date-api.onrender.com';
 const userId = tg?.initDataUnsafe?.user?.id || 7049109708;
 
-// دیتای کامل با حالت وویس و عکس‌های مختلف
 const MOCK_USERS = [
     {
         telegram_id: 101,
@@ -41,7 +40,9 @@ const MOCK_USERS = [
 ];
 
 let suggestedUsersQueue = [];
-let favoritesList = [];
+let matchedUsersList = [];
+let currentChatUser = null;
+let isRecording = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
@@ -65,7 +66,6 @@ function updateProfileDisplay() {
 }
 
 async function fetchSuggestedUsers() {
-    const container = document.getElementById('cards-container');
     const gender = document.getElementById('filter-gender')?.value || 'all';
     const city = document.getElementById('filter-city')?.value || 'all';
 
@@ -167,7 +167,9 @@ function handleLike() {
 
     const currentMatched = suggestedUsersQueue[0];
     if (currentMatched) {
-        favoritesList.push(currentMatched);
+        if (!matchedUsersList.some(u => u.telegram_id === currentMatched.telegram_id)) {
+            matchedUsersList.push(currentMatched);
+        }
         showMatchPopup(currentMatched);
     }
 
@@ -176,29 +178,101 @@ function handleLike() {
 }
 
 function showMatchPopup(matchedUser) {
+    const myAvatar = document.getElementById('profile-avatar').src;
     const popup = document.createElement('div');
     popup.className = 'match-modal';
     popup.innerHTML = `
         <div class="match-content">
             <h2>IT'S A MATCH! 🔥</h2>
             <p>شما و ${matchedUser.name} یکدیگر را لایک کردید!</p>
-            <img src="${matchedUser.photo}" class="match-avatar">
-            <button onclick="this.parentElement.parentElement.remove()" class="btn-action btn-save">ارسال پیام 💬</button>
+            <div class="match-avatars-pair">
+                <img src="${matchedUser.photo}" class="match-avatar">
+                <img src="${myAvatar}" class="match-avatar user-self">
+            </div>
+            <div class="match-btns">
+                <button onclick="openChatWith(${matchedUser.telegram_id}); this.closest('.match-modal').remove();" class="btn-action btn-save">ارسال پیام 💬</button>
+                <button onclick="this.closest('.match-modal').remove()" class="btn-action btn-voice" style="background:transparent; border:none;">ادامه اکسپلور 🔄</button>
+            </div>
         </div>
     `;
     document.body.appendChild(popup);
+}
+
+function renderMatchesAndChats() {
+    const newMatchesContainer = document.getElementById('new-matches-list');
+    if (!newMatchesContainer) return;
+
+    if (matchedUsersList.length === 0) {
+        newMatchesContainer.innerHTML = '<span style="font-size:11px; color:var(--text-secondary);">هنوز مچی ندارید</span>';
+        return;
+    }
+
+    newMatchesContainer.innerHTML = matchedUsersList.map(user => `
+        <div class="match-item-avatar" onclick="openChatWith(${user.telegram_id})">
+            <img src="${user.photo}" alt="${user.name}">
+            <span>${user.name}</span>
+        </div>
+    `).join('');
+}
+
+function openChatWith(telegramId) {
+    const user = matchedUsersList.find(u => u.telegram_id === telegramId) || MOCK_USERS.find(u => u.telegram_id === telegramId);
+    if (!user) return;
+
+    currentChatUser = user;
+    document.getElementById('chat-user-name').innerText = user.name;
+    document.getElementById('chat-user-avatar').src = user.photo;
+    
+    const body = document.getElementById('chat-messages');
+    body.innerHTML = `
+        <div class="chat-bubble them">سلام! خوشحالم که مچ شدیم 😊</div>
+    `;
+
+    document.getElementById('chat-modal').classList.add('active');
+}
+
+function closeChat() {
+    document.getElementById('chat-modal').classList.remove('active');
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const body = document.getElementById('chat-messages');
+    body.innerHTML += `<div class="chat-bubble me">${msg}</div>`;
+    input.value = '';
+    body.scrollTop = body.scrollHeight;
+}
+
+function toggleVoiceRecord() {
+    const btn = document.getElementById('btn-record-voice');
+    const status = document.getElementById('voice-rec-status');
+
+    if (!isRecording) {
+        isRecording = true;
+        btn.innerText = "⏹ توقف ضبط (۱۲s)";
+        status.innerText = "در حال ضبط...";
+        status.style.color = "#ff2a5f";
+    } else {
+        isRecording = false;
+        btn.innerText = "🎤 شروع ضبط صدا";
+        status.innerText = "صدا ضبط شد ✅";
+        status.style.color = "#2ecc71";
+    }
 }
 
 function renderFavorites() {
     const container = document.getElementById('favorites-container');
     if (!container) return;
 
-    if (favoritesList.length === 0) {
+    if (matchedUsersList.length === 0) {
         container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color: var(--text-secondary);">هنوز کسی را لایک نکرده‌اید.</p>';
         return;
     }
 
-    container.innerHTML = favoritesList.map(user => `
+    container.innerHTML = matchedUsersList.map(user => `
         <div class="fav-card">
             <img src="${user.photo}" alt="${user.name}">
             <div class="fav-card-info">
@@ -210,21 +284,8 @@ function renderFavorites() {
 }
 
 async function saveProfile() {
-    const gender = document.getElementById('user-gender').value;
-    const city = document.getElementById('user-city').value;
-    const bio = document.getElementById('user-bio').value;
-
-    try {
-        await fetch(`${API_URL}/api/user/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: userId, gender, city, bio })
-        });
-        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        alert('پروفایل با موفقیت ذخیره شد! ✨');
-    } catch (e) {
-        alert('اطلاعات ذخیره شد.');
-    }
+    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    alert('پروفایل با موفقیت بروزرسانی شد! ✨');
 }
 
 function setupNavigation() {
@@ -241,9 +302,8 @@ function setupNavigation() {
             button.classList.add('active');
             document.getElementById(`tab-${targetTab}`)?.classList.add('active');
 
-            if (targetTab === 'favorites') {
-                renderFavorites();
-            }
+            if (targetTab === 'favorites') renderFavorites();
+            if (targetTab === 'chats') renderMatchesAndChats();
 
             if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
         });
