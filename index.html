@@ -13,6 +13,7 @@
             --accent-red: #ff2a5f;
             --accent-gold: #ffb703;
             --accent-blue: #3a86ff;
+            --accent-green: #2ecc71;
             --text-primary: #ffffff;
             --text-secondary: #9a97b2;
             --border-color: #2a2744;
@@ -34,16 +35,27 @@
             min-height: 100vh;
             padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
             overflow-x: hidden;
+            position: relative;
         }
 
-        /* فاصله دقیق هدر برای نرفتن زیر دکمه‌های ناوبری آیفون/تلگرام */
+        /* بک‌گراند انیمیشنی ذرات شناور */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         .app-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: calc(55px + env(safe-area-inset-top, 0px)) 16px 12px;
-            background: rgba(13, 12, 29, 0.98);
-            backdrop-filter: blur(10px);
+            background: rgba(13, 12, 29, 0.85);
+            backdrop-filter: blur(12px);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -56,6 +68,22 @@
             background: linear-gradient(45deg, #ff2a5f, #ff758c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        .btn-daily-header {
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(255, 183, 3, 0.15);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .vip-badge {
@@ -71,16 +99,15 @@
             align-items: center; 
             gap: 4px;
         }
+        .vip-badge.active { background: linear-gradient(45deg, #ffb703, #ff8800); color: #000; border: none; }
 
-        .main-content { padding: 12px; max-width: 480px; margin: 0 auto; }
+        .main-content { padding: 12px; max-width: 480px; margin: 0 auto; position: relative; z-index: 10; }
         
-        /* مدیریت تب‌ها */
         .tab-view { display: none; }
         .tab-view.active { display: block; animation: fadeIn 0.2s ease-in-out; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* فیلترها */
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 
         .form-input, select, textarea {
@@ -97,10 +124,10 @@
 
         select option { background-color: #161426; color: #ffffff; }
 
-        /* کارت اکپسلور */
         .cards-wrapper { min-height: 440px; position: relative; }
         .dating-card {
-            background: var(--bg-card);
+            background: rgba(22, 20, 38, 0.9);
+            backdrop-filter: blur(8px);
             border-radius: var(--radius-lg);
             overflow: hidden;
             border: 1px solid var(--border-color);
@@ -124,9 +151,7 @@
         .card-info-content h2 { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
         .card-info-content .age { font-size: 15px; color: var(--text-secondary); }
 
-        .intent-badge, .city-badge {
-            display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 10px; margin-top: 4px;
-        }
+        .intent-badge, .city-badge { display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 10px; margin-top: 4px; }
         .intent-badge { color: var(--accent-gold); background: rgba(255, 183, 3, 0.15); }
         .city-badge { color: #ff758c; background: rgba(255, 42, 95, 0.15); }
 
@@ -144,7 +169,6 @@
         .btn-superlike { background: var(--bg-input); color: var(--accent-blue); border: 1px solid var(--border-color); }
         .btn-like-main { background: linear-gradient(45deg, #ff2a5f, #ff758c); color: #fff; width: 52px; height: 52px; }
 
-        /* پروفایل */
         .avatar-wrapper { position: relative; width: 90px; height: 90px; margin: 0 auto 8px; cursor: pointer; }
         .avatar-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-red); }
         .avatar-edit-overlay {
@@ -158,7 +182,7 @@
             position: fixed; bottom: 0; left: 0; right: 0;
             height: calc(60px + env(safe-area-inset-bottom, 0px));
             padding-bottom: env(safe-area-inset-bottom, 0px);
-            background: rgba(22, 20, 38, 0.98); backdrop-filter: blur(10px);
+            background: rgba(22, 20, 38, 0.95); backdrop-filter: blur(10px);
             display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border-color); z-index: 200;
         }
         .nav-item { background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; flex: 1; cursor: pointer; }
@@ -181,14 +205,47 @@
 
         .empty-state { text-align: center; padding: 40px 15px; color: var(--text-secondary); }
 
+        /* مودال Daily Check-in */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
+            z-index: 600; display: none; align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .daily-card-container {
+            background: #18152e; border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 20px 16px; width: 100%; max-width: 400px;
+            text-align: center; position: relative; max-height: 90vh; overflow-y: auto;
+        }
+
+        .daily-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0; }
+        .daily-item {
+            background: #221f3d; border-radius: 12px; padding: 10px 4px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid transparent; position: relative; min-height: 75px;
+        }
+        .daily-item.claimed { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+        .daily-item.current { border-color: var(--accent-gold); box-shadow: 0 0 10px rgba(255,183,3,0.3); }
+        .daily-item .day-num { position: absolute; top: 4px; right: 6px; font-size: 9px; opacity: 0.7; }
+        .daily-item .reward-icon { font-size: 18px; margin: 4px 0; }
+        .daily-item .reward-text { font-size: 10px; font-weight: bold; }
+
+        .daily-timer-btn {
+            background: #2a264a; color: #fff; border: none; width: 100%; padding: 14px;
+            border-radius: 14px; font-weight: bold; font-size: 13px; margin-top: 8px; cursor: pointer;
+        }
+        .daily-timer-btn.active { background: linear-gradient(45deg, #ff2a5f, #ff758c); }
+
         /* مودال VIP */
-        .vip-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .vip-modal.active { display: flex; }
         .vip-modal-content { background: var(--bg-card); border: 1px solid var(--accent-gold); border-radius: var(--radius-lg); padding: 18px; width: 100%; max-width: 380px; text-align: center; }
         .vip-plan-card { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     </style>
 </head>
 <body>
+
+    <!-- بوم انیمیشن موشن ذرات -->
+    <canvas id="particle-canvas"></canvas>
 
     <div id="custom-toast" class="custom-toast">
         <span id="toast-icon">✨</span>
@@ -199,8 +256,13 @@
         <div class="brand">
             <span class="brand-title">Spicy Date 🌶️</span>
         </div>
-        <div id="vip-status-badge" class="vip-badge" onclick="openVipModal()">
-            <span>⭐️</span> ارتقاء به VIP
+        <div class="header-actions">
+            <button class="btn-daily-header" onclick="openDailyModal()">
+                <span>📅</span> بونوس
+            </button>
+            <div id="vip-status-badge" class="vip-badge" onclick="openVipModal()">
+                <span>⭐️</span> VIP
+            </div>
         </div>
     </header>
 
@@ -310,7 +372,7 @@
                     <textarea id="user-bio" rows="2" class="form-input" placeholder="یک جمله جذاب درباره خودت بنویس..."></textarea>
                 </div>
 
-                <button type="button" class="btn-action btn-save" onclick="saveProfileDirect()">💾 ذخیره تغییرات</button>
+                <button type="button" class="btn-action btn-save" onclick="saveProfileDirect()">💾 ذخیره تغییرات (ابری تلگرام)</button>
                 <button type="button" class="btn-action btn-ref" onclick="shareReferralLink()">🔗 دعوت از دوستان (+VIP)</button>
                 <button type="button" class="btn-action btn-channel" onclick="joinChannel()">📢 عضویت در کانال ما</button>
             </div>
@@ -318,8 +380,23 @@
 
     </main>
 
+    <!-- مودال Daily Check-in -->
+    <div id="daily-modal" class="modal-overlay">
+        <div class="daily-card-container">
+            <div style="display:flex; justify-style:space-between; align-items:center; margin-bottom:6px;">
+                <h3 style="font-size: 16px;">ورود روزانه (Daily Check-in)</h3>
+                <span onclick="closeDailyModal()" style="cursor:pointer; font-size:18px;">✕</span>
+            </div>
+            <p style="font-size: 10px; color: var(--text-secondary);">هر روز سر بزنید تا جوایز ویژه، انرژی و استارز بگیرید.</p>
+            
+            <div id="daily-grid" class="daily-grid"></div>
+
+            <button id="daily-claim-btn" class="daily-timer-btn" onclick="claimDailyReward()">دریافت جایزه امروز</button>
+        </div>
+    </div>
+
     <!-- مودال خرید VIP -->
-    <div id="vip-modal" class="vip-modal">
+    <div id="vip-modal" class="modal-overlay">
         <div class="vip-modal-content">
             <h3 style="color: var(--accent-gold); margin-bottom: 8px;">👑 ارتقاء به حساب VIP</h3>
             <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">لایک نامحدود، بازگردانی کارت (Rewind) و حالت روح</p>
