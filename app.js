@@ -1,10 +1,16 @@
 const tg = window.Telegram?.WebApp;
 if (tg) {
     tg.expand();
+    tg.ready();
 }
 
-const API_URL = 'https://spicy-date-api.onrender.com';
-const userId = tg?.initDataUnsafe?.user?.id || 7049109708;
+// لیست جامع مراکز استان و شهرهای مهم ایران
+const IRAN_CITIES = [
+    "تهران", "بندرعباس", "مشهد", "اصفهان", "شیراز", "تبریز", "کرج", "قم", "اهواز", 
+    "رشت", "کرمانشاه", "زاهدان", "ارومیه", "یزد", "اراک", "همدان", "قزوین", "سنندج", 
+    "خرم‌آباد", "گرگان", "ساری", "بجنورد", "بوشهر", "بیرجند", "ایلام", "شهرکرد", 
+    "سمنان", "زنجان", "یاسوج", "اردبیل", "کیش", "قشم", "چابهار"
+];
 
 const MOCK_USERS = [
     {
@@ -41,28 +47,102 @@ const MOCK_USERS = [
 
 let suggestedUsersQueue = [];
 let matchedUsersList = [];
-let currentChatUser = null;
 let isRecording = false;
+let recordTimerInterval = null;
+let recordSeconds = 0;
+let userVoiceData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    populateCities();
     setupNavigation();
     initApp();
 });
 
-async function initApp() {
-    updateProfileDisplay();
-    await fetchSuggestedUsers();
+function populateCities() {
+    const filterCitySelect = document.getElementById('filter-city');
+    const userCitySelect = document.getElementById('user-city');
+
+    IRAN_CITIES.sort().forEach(city => {
+        const option1 = new Option(city, city);
+        const option2 = new Option(city, city);
+        filterCitySelect.add(option1);
+        userCitySelect.add(option2);
+    });
 }
 
-function updateProfileDisplay() {
+function initApp() {
     const user = tg?.initDataUnsafe?.user;
     if (user) {
-        document.getElementById('profile-name-display').innerText = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'پروفایل من';
-        document.getElementById('profile-id-display').innerText = `ID: ${user.id}`;
+        document.getElementById('profile-name-display').innerText = user.first_name || 'کاربر جدید';
+        document.getElementById('user-display-name').value = user.first_name || '';
         if (user.photo_url) {
             document.getElementById('profile-avatar').src = user.photo_url;
         }
     }
+    fetchSuggestedUsers();
+}
+
+function handleAvatarChange(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('profile-avatar').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function toggleVoiceRecord() {
+    const btnRec = document.getElementById('btn-record-voice');
+    const btnDel = document.getElementById('btn-delete-voice');
+    const timerDisplay = document.getElementById('voice-timer');
+
+    if (!isRecording) {
+        isRecording = true;
+        recordSeconds = 0;
+        btnRec.innerText = "⏹ توقف ضبط";
+        btnRec.style.background = "#e74c3c";
+        btnDel.style.display = "none";
+
+        recordTimerInterval = setInterval(() => {
+            recordSeconds++;
+            const secStr = recordSeconds < 10 ? `0${recordSeconds}` : recordSeconds;
+            timerDisplay.innerText = `00:${secStr}`;
+
+            if (recordSeconds >= 15) {
+                stopRecording();
+            }
+        }, 1000);
+    } else {
+        stopRecording();
+    }
+}
+
+function stopRecording() {
+    clearInterval(recordTimerInterval);
+    isRecording = false;
+
+    const btnRec = document.getElementById('btn-record-voice');
+    const btnDel = document.getElementById('btn-delete-voice');
+    const timerDisplay = document.getElementById('voice-timer');
+
+    btnRec.innerText = "🎤 ضبط مجدد";
+    btnRec.style.background = "var(--accent-red)";
+    btnDel.style.display = "inline-block";
+    userVoiceData = "recorded_voice_data_placeholder";
+    timerDisplay.innerText = `ثبت شد (${recordSeconds} ثانیه)`;
+}
+
+function deleteVoice() {
+    clearInterval(recordTimerInterval);
+    isRecording = false;
+    userVoiceData = null;
+    recordSeconds = 0;
+
+    document.getElementById('btn-record-voice').innerText = "🎤 شروع ضبط";
+    document.getElementById('btn-delete-voice').style.display = "none";
+    document.getElementById('voice-timer').innerText = "00:00";
 }
 
 async function fetchSuggestedUsers() {
@@ -88,9 +168,8 @@ function renderNextCard() {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">🔍</div>
-                <h4>پروفایل جدیدی پیدا نشد!</h4>
+                <h4>پروفایل دیگری یافت نشد!</h4>
                 <p>فیلتر شهر یا جنسیت را تغییر دهید.</p>
-                <button onclick="fetchSuggestedUsers()" class="btn-action btn-save" style="margin-top: 15px;">تلاش مجدد 🔄</button>
             </div>
         `;
         return;
@@ -99,7 +178,7 @@ function renderNextCard() {
     const user = suggestedUsersQueue[0];
 
     container.innerHTML = `
-        <div class="dating-card" id="active-card">
+        <div class="dating-card">
             <div class="card-media">
                 <img src="${user.photo}" alt="${user.name}">
                 <div class="card-gradient-overlay"></div>
@@ -110,7 +189,7 @@ function renderNextCard() {
             </div>
             <div class="card-bio">
                 <p>${user.bio}</p>
-                ${user.voice ? `<button onclick="playVoice('${user.voice}')" class="btn-voice">🎙️ شنیدن صدای ۱۲ ثانیه‌ای</button>` : ''}
+                ${user.voice ? `<button onclick="playVoice('${user.voice}')" class="btn-voice">🎙️ شنیدن ویس معرفی</button>` : ''}
             </div>
             <div class="card-actions-bar">
                 <button onclick="handlePass()" class="btn-circle btn-pass">✖</button>
@@ -118,84 +197,24 @@ function renderNextCard() {
             </div>
         </div>
     `;
-
-    setupSwipeGesture();
 }
 
 function playVoice(url) {
-    const audio = new Audio(url);
-    audio.play();
-}
-
-function setupSwipeGesture() {
-    const card = document.getElementById('active-card');
-    if (!card) return;
-
-    let startX = 0;
-    let currentX = 0;
-
-    card.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-    }, { passive: true });
-
-    card.addEventListener('touchmove', (e) => {
-        currentX = e.touches[0].clientX;
-        const diffX = currentX - startX;
-        card.style.transform = `translateX(${diffX}px) rotate(${diffX * 0.05}deg)`;
-    }, { passive: true });
-
-    card.addEventListener('touchend', () => {
-        const diffX = currentX - startX;
-        if (diffX > 90) {
-            handleLike();
-        } else if (diffX < -90) {
-            handlePass();
-        } else {
-            card.style.transform = 'translateX(0) rotate(0)';
-        }
-    });
+    new Audio(url).play();
 }
 
 function handlePass() {
-    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     suggestedUsersQueue.shift();
     renderNextCard();
 }
 
 function handleLike() {
-    if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
     const currentMatched = suggestedUsersQueue[0];
-    if (currentMatched) {
-        if (!matchedUsersList.some(u => u.telegram_id === currentMatched.telegram_id)) {
-            matchedUsersList.push(currentMatched);
-        }
-        showMatchPopup(currentMatched);
+    if (currentMatched && !matchedUsersList.some(u => u.telegram_id === currentMatched.telegram_id)) {
+        matchedUsersList.push(currentMatched);
     }
-
     suggestedUsersQueue.shift();
     renderNextCard();
-}
-
-function showMatchPopup(matchedUser) {
-    const myAvatar = document.getElementById('profile-avatar').src;
-    const popup = document.createElement('div');
-    popup.className = 'match-modal';
-    popup.innerHTML = `
-        <div class="match-content">
-            <h2>IT'S A MATCH! 🔥</h2>
-            <p>شما و ${matchedUser.name} یکدیگر را لایک کردید!</p>
-            <div class="match-avatars-pair">
-                <img src="${matchedUser.photo}" class="match-avatar">
-                <img src="${myAvatar}" class="match-avatar user-self">
-            </div>
-            <div class="match-btns">
-                <button onclick="openChatWith(${matchedUser.telegram_id}); this.closest('.match-modal').remove();" class="btn-action btn-save">ارسال پیام 💬</button>
-                <button onclick="this.closest('.match-modal').remove()" class="btn-action btn-voice" style="background:transparent; border:none;">ادامه اکسپلور 🔄</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(popup);
 }
 
 function renderMatchesAndChats() {
@@ -209,25 +228,19 @@ function renderMatchesAndChats() {
 
     newMatchesContainer.innerHTML = matchedUsersList.map(user => `
         <div class="match-item-avatar" onclick="openChatWith(${user.telegram_id})">
-            <img src="${user.photo}" alt="${user.name}">
-            <span>${user.name}</span>
+            <img src="${user.photo}" style="width:55px; height:55px; border-radius:50%; border:2px solid var(--accent-red);" alt="${user.name}">
+            <span style="font-size:11px; display:block; text-align:center; margin-top:3px;">${user.name}</span>
         </div>
     `).join('');
 }
 
 function openChatWith(telegramId) {
-    const user = matchedUsersList.find(u => u.telegram_id === telegramId) || MOCK_USERS.find(u => u.telegram_id === telegramId);
+    const user = matchedUsersList.find(u => u.telegram_id === telegramId);
     if (!user) return;
 
-    currentChatUser = user;
     document.getElementById('chat-user-name').innerText = user.name;
     document.getElementById('chat-user-avatar').src = user.photo;
-    
-    const body = document.getElementById('chat-messages');
-    body.innerHTML = `
-        <div class="chat-bubble them">سلام! خوشحالم که مچ شدیم 😊</div>
-    `;
-
+    document.getElementById('chat-messages').innerHTML = `<div class="chat-bubble them">سلام! خوشحالم مچ شدیم 😊</div>`;
     document.getElementById('chat-modal').classList.add('active');
 }
 
@@ -246,46 +259,12 @@ function sendChatMessage() {
     body.scrollTop = body.scrollHeight;
 }
 
-function toggleVoiceRecord() {
-    const btn = document.getElementById('btn-record-voice');
-    const status = document.getElementById('voice-rec-status');
-
-    if (!isRecording) {
-        isRecording = true;
-        btn.innerText = "⏹ توقف ضبط (۱۲s)";
-        status.innerText = "در حال ضبط...";
-        status.style.color = "#ff2a5f";
-    } else {
-        isRecording = false;
-        btn.innerText = "🎤 شروع ضبط صدا";
-        status.innerText = "صدا ضبط شد ✅";
-        status.style.color = "#2ecc71";
+function saveProfile() {
+    const displayName = document.getElementById('user-display-name').value;
+    if (displayName) {
+        document.getElementById('profile-name-display').innerText = displayName;
     }
-}
-
-function renderFavorites() {
-    const container = document.getElementById('favorites-container');
-    if (!container) return;
-
-    if (matchedUsersList.length === 0) {
-        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color: var(--text-secondary);">هنوز کسی را لایک نکرده‌اید.</p>';
-        return;
-    }
-
-    container.innerHTML = matchedUsersList.map(user => `
-        <div class="fav-card">
-            <img src="${user.photo}" alt="${user.name}">
-            <div class="fav-card-info">
-                <h4>${user.name}، ${user.age}</h4>
-                <p>📍 ${user.city}</p>
-            </div>
-        </div>
-    `).join('');
-}
-
-async function saveProfile() {
-    if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    alert('پروفایل با موفقیت بروزرسانی شد! ✨');
+    alert('اطلاعات پروفایل با موفقیت ذخیره شد! ✨');
 }
 
 function setupNavigation() {
@@ -302,10 +281,7 @@ function setupNavigation() {
             button.classList.add('active');
             document.getElementById(`tab-${targetTab}`)?.classList.add('active');
 
-            if (targetTab === 'favorites') renderFavorites();
             if (targetTab === 'chats') renderMatchesAndChats();
-
-            if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
         });
     });
 }
