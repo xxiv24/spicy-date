@@ -1,3 +1,27 @@
+
+async function getBlockedUserIds(userId) {
+  try {
+    const blocks = await Interaction.find({
+      $or: [
+        { fromUser: userId, action: "block" },
+        { toUser: userId, action: "block" }
+      ]
+    }).lean();
+    
+    const blockedSet = new Set();
+    blocks.forEach(b => {
+      if (b.fromUser.toString() === userId.toString()) {
+        blockedSet.add(b.toUser.toString());
+      } else {
+        blockedSet.add(b.fromUser.toString());
+      }
+    });
+    return Array.from(blockedSet);
+  } catch (err) {
+    return [];
+  }
+}
+
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
@@ -47,26 +71,44 @@ router.post("/profile/update", async (req, res) => {
   }
 });
 
-router.get("/discover", async (req, res) => {
+
+// دریافت کاربران پیشنهادی (Discovery) با اعمال فیلتر مسدودسازی دوطرفه
+router.get("/discover", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
-    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
-    const blockedInteractions = await Interaction.find({
-      $or: [
-        { fromUser: userId, action: "block" },
-        { toUser: userId, action: "block" }
-      ]
+    const currentUserId = req.user && (req.user._id || req.user.id || req.user.userId);
+    if (!currentUserId) {
+      return res.status(401).json({ success: false, message: "احراز هویت نامعتبر است." });
+    }
+
+    // ۱. استخراج کاربران بلاک‌شده دوطرفه
+    const blockedIds = await getBlockedUserIds(currentUserId);
+
+    // ۲. استخراج کاربرانی که قبلاً تعامل (لایک/پاس) داشته‌اند
+    const interactions = await Interaction.find({ fromUser: currentUserId }).select("toUser").lean();
+    const interactedIds = interactions.map(i => i.toUser.toString());
+
+    // لیست کامل آی‌دی‌های مستثنی‌شده
+    const excludeIds = Array.from(new Set([...blockedIds, ...interactedIds, currentUserId.toString()]));
+
+    // ۳. کوئری کاربران واجد شرایط از دیتابیس
+    const candidates = await User.find({
+      _id: { $nin: excludeIds }
+    })
+    .select("-password -__v")
+    .limit(20)
+    .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: candidates.length,
+      users: candidates
     });
-    const excludedIds = blockedInteractions.map(i =>
-      i.fromUser.toString() === userId.toString() ? i.toUser : i.fromUser
-    );
-    excludedIds.push(userId);
-    const profiles = await UserProfile.find({ userId: { $nin: excludedIds } }).limit(20);
-    res.json({ success: true, count: profiles.length, data: profiles });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Error in /discover:", error);
+    return res.status(500).json({ success: false, message: "خطای سرور در دریافت دیسکاور." });
   }
 });
+
 
 router.post("/chats/send", async (req, res) => {
   try {
