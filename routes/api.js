@@ -1,125 +1,213 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const UserProfile = require("../models/UserProfile");
+const Chat = require("../models/Chat");
+const VIPStatus = require("../models/VIPStatus");
+const Interaction = require("../models/Interaction");
+const Report = require("../models/Report");
 
-// Middleware: Verify token
-function verifyToken(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'No token' 
-    });
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Invalid token' 
-    });
-  }
+const authService = require("../services/authService");
+const authMiddleware = authService.authMiddleware || authService.authenticateToken || authService;
+
+if (typeof authMiddleware === "function") {
+  router.use(authMiddleware);
 }
 
-// Get profile
-router.get('/profile', verifyToken, (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      userId: req.userId,
-      firstName: 'User',
-      email: 'user@example.com'
-    }
-  });
-});
-
-// Update profile
-router.post('/profile', verifyToken, (req, res) => {
-  const { firstName, bio, age, gender } = req.body;
-  
-  res.json({
-    success: true,
-    message: 'Profile updated',
-    data: {
-      userId: req.userId,
-      firstName,
-      bio,
-      age,
-      gender
-    }
-  });
-});
-
-// Get discover users
-router.get('/discover', verifyToken, (req, res) => {
-  res.json({
-    success: true,
-    data: [
-      { 
-        userId: 'user1', 
-        firstName: 'John', 
-        age: 25, 
-        gender: 'male' 
-      },
-      { 
-        userId: 'user2', 
-        firstName: 'Jane', 
-        age: 23, 
-        gender: 'female' 
-      }
-    ]
-  });
-});
-
-// Send message
-router.post('/chats/message', verifyToken, (req, res) => {
-  const { receiverId, message } = req.body;
-  
-  if (!receiverId || !message) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Missing fields' 
-    });
+router.get("/profile", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const profile = await UserProfile.findOne({ userId });
+    if (!profile) return res.status(404).json({ success: false, error: "پروفایل یافت نشد" });
+    res.json({ success: true, data: profile });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
-  
-  res.json({
-    success: true,
-    message: 'Message sent',
-    data: {
-      sender: req.userId,
-      receiver: receiverId,
-      text: message,
-      timestamp: new Date()
+});
+
+router.post("/profile/update", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const { bio, interests, location, preferences } = req.body;
+    let profile = await UserProfile.findOne({ userId });
+    if (!profile) {
+      profile = new UserProfile({ userId, bio, interests, location, preferences });
+    } else {
+      if (bio !== undefined) profile.bio = bio;
+      if (interests !== undefined) profile.interests = interests;
+      if (location !== undefined) profile.location = location;
+      if (preferences !== undefined) profile.preferences = preferences;
     }
-  });
+    await profile.save();
+    res.json({ success: true, message: "پروفایل با موفقیت به‌روزرسانی شد", data: profile });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// Get chats
-router.get('/chats', verifyToken, (req, res) => {
-  res.json({
-    success: true,
-    data: []
-  });
+router.get("/discover", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const blockedInteractions = await Interaction.find({
+      $or: [
+        { fromUser: userId, action: "block" },
+        { toUser: userId, action: "block" }
+      ]
+    });
+    const excludedIds = blockedInteractions.map(i =>
+      i.fromUser.toString() === userId.toString() ? i.toUser : i.fromUser
+    );
+    excludedIds.push(userId);
+    const profiles = await UserProfile.find({ userId: { $nin: excludedIds } }).limit(20);
+    res.json({ success: true, count: profiles.length, data: profiles });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// VIP status
-router.get('/vip/status', verifyToken, (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      isVIP: false,
-      plan: null
+router.post("/chats/send", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const { receiverId, message } = req.body;
+    if (!receiverId || !message) {
+      return res.status(400).json({ success: false, error: "شناسه گیرنده و متن پیام الزامی است" });
     }
-  });
+    const isBlocked = await Interaction.findOne({
+      $or: [
+        { fromUser: userId, toUser: receiverId, action: "block" },
+        { fromUser: receiverId, toUser: userId, action: "block" }
+      ]
+    });
+    if (isBlocked) {
+      return res.status(403).json({ success: false, error: "امکان ارسال پیام به دلیل مسدود بودن وجود ندارد" });
+    }
+    const newChat = new Chat({ senderId: userId, receiverId, message, read: false });
+    await newChat.save();
+    res.status(201).json({ success: true, data: newChat });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// Health
-router.get('/health', (req, res) => {
-  res.json({ success: true, status: 'API running' });
+router.get("/chats/:chatId", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const targetUserId = req.params.chatId;
+    const messages = await Chat.find({
+      $or: [
+        { senderId: userId, receiverId: targetUserId },
+        { senderId: targetUserId, receiverId: userId }
+      ]
+    }).sort({ createdAt: 1 });
+    res.json({ success: true, data: messages });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get("/vip/status", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const vip = await VIPStatus.findOne({ userId });
+    if (!vip || !vip.isActive || (vip.expiresAt && vip.expiresAt < new Date())) {
+      return res.json({ success: true, data: { isVIP: false, plan: null, expiresAt: null, features: [] } });
+    }
+    res.json({
+      success: true,
+      data: {
+        isVIP: true,
+        plan: vip.plan,
+        expiresAt: vip.expiresAt,
+        features: vip.features,
+        visibilityMultiplier: vip.visibilityMultiplier
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post("/vip/upgrade", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const { plan, paymentMethod } = req.body;
+    if (!["monthly", "yearly", "lifetime"].includes(plan)) {
+      return res.status(400).json({ success: false, error: "پلن انتخابی نامعتبر است" });
+    }
+    let durationDays = 30;
+    let price = 9.99;
+    if (plan === "yearly") { durationDays = 365; price = 89.99; }
+    else if (plan === "lifetime") { durationDays = 36500; price = 199.99; }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+    const vip = await VIPStatus.findOneAndUpdate(
+      { userId },
+      {
+        plan,
+        paymentMethod: paymentMethod || "crypto",
+        price,
+        startDate: new Date(),
+        expiresAt,
+        isActive: true,
+        features: ["unlimited_likes", "night_mask", "ad_free", "priority_match", "see_likes", "rewind"],
+        visibilityMultiplier: 3,
+        transactionId: "TXN_" + Date.now()
+      },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, message: "اکانت با موفقیت به VIP ارتقا یافت", data: vip });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post("/users/block", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const { targetUserId } = req.body;
+    if (!targetUserId) return res.status(400).json({ success: false, error: "شناسه کاربر هدف الزامی است" });
+    if (targetUserId.toString() === userId.toString()) return res.status(400).json({ success: false, error: "امکان مسدودسازی خود وجود ندارد" });
+
+    const interaction = await Interaction.findOneAndUpdate(
+      { fromUser: userId, toUser: targetUserId },
+      { action: "block" },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, message: "کاربر با موفقیت مسدود شد", data: interaction });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post("/users/report", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const { reportedUserId, reason, description } = req.body;
+    if (!reportedUserId || !reason) {
+      return res.status(400).json({ success: false, error: "شناسه کاربر و دلیل گزارش الزامی است" });
+    }
+    const report = new Report({
+      reporterId: userId,
+      reportedUserId,
+      reason,
+      description: description || ""
+    });
+    await report.save();
+    res.status(201).json({ success: true, message: "گزارش تخلف ثبت گردید", data: report });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 module.exports = router;
