@@ -252,4 +252,53 @@ router.post("/users/report", async (req, res) => {
   }
 });
 
+
+// --- Unblock User ---
+router.post("/users/unblock", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+    const { targetUserId } = req.body;
+    if (!targetUserId) return res.status(400).json({ success: false, error: "شناسه کاربر هدف الزامی است" });
+
+    const result = await Interaction.findOneAndDelete({
+      fromUser: userId,
+      toUser: targetUserId,
+      action: "block"
+    });
+
+    if (!result) {
+      return res.status(404).json({ success: false, message: "این کاربر در لیست مسدودشدگان شما قرار ندارد" });
+    }
+
+    res.json({ success: true, message: "کاربر با موفقیت از مسدودیت خارج شد" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// --- Get Blocked Users List ---
+router.get("/users/blocked", async (req, res) => {
+  try {
+    const userId = req.user ? (req.user.userId || req.user._id || req.user.id) : null;
+    if (!userId) return res.status(401).json({ success: false, error: "توکن نامعتبر است یا کاربر احراز هویت نشده است" });
+
+    const blockedInteractions = await Interaction.find({
+      fromUser: userId,
+      action: "block"
+    }).populate("toUser", "firstName lastName username email photos").lean();
+
+    const blockedUsers = blockedInteractions
+      .filter(i => i.toUser)
+      .map(i => ({
+        blockedAt: i.createdAt || i.updatedAt,
+        user: i.toUser
+      }));
+
+    res.json({ success: true, count: blockedUsers.length, data: blockedUsers });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
